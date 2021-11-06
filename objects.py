@@ -9,5 +9,5 @@ class Object:
     def get_name(self):
         return self.name
 
-    def position(self):
+    def get_position(self):
         return self.pos

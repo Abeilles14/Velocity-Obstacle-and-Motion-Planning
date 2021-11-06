@@ -26,6 +26,7 @@ logger.setLevel(logging.DEBUG)
 ### CONSTANTS ###
 ARM_HOME_POS = [0.0, 0.0, 0.0]
 PAUSE_TIME = 0.0005
+ABS_TOLERANCE = 0.055
 
 class ArmState(Enum):
     APPROACH_OBJECT = 1,
@@ -37,7 +38,7 @@ class ArmState(Enum):
 
 class ArmStateMachine:
     def __init__(self, ax, obstacles, arm, obj, bowl,
-                 closed_loop=False, home_when_done=False, log_verbose=True):
+                 closed_loop=False, home_when_done=True, log_verbose=True):
         self.ax = ax
         self.obstacles = obstacles
         self.arm = arm
@@ -70,45 +71,45 @@ class ArmStateMachine:
 
     ### STATE FUNCTIONS ###
     def _approach_object(self):
+        self.arm.set_destination(self.obj.get_position())
         if self.log_verbose:
-            logger.debug("Arm {} APPROACHING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
-        self._set_arm_dest(self.obj.position())
+            logger.debug("{} APPROACHING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
+        self._set_arm_dest(self.obj.get_position())
 
     def _approach_object_next(self):
-        # if (self.arm.get_position() == self.obj.position()).all():
-        return ArmState.GRAB_OBJECT
-        # else:
-        #     return ArmState.APPROACH_OBJECT
+        if np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
+            return ArmState.GRAB_OBJECT
+        else:
+            return ArmState.APPROACH_OBJECT
     
     def _grab_object(self):
         if self.log_verbose:
-            logger.debug("Arm {} GRABBING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
+            logger.debug("{} GRABBING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
 
     def _grab_object_next(self):
+        self.arm.set_destination(self.bowl)
         return ArmState.APPROACH_DEST
 
     def _approach_dest(self):
         if self.log_verbose:
-            logger.debug("Arm {} APPROACHING DEST at {}".format(self.arm.get_name(), self.bowl))
-        self._set_arm_dest(self.bowl)
+            logger.debug("{} APPROACHING DEST at {}".format(self.arm.get_name(), self.arm.get_destination()))
+        self._set_arm_dest(self.arm.get_destination())
 
     def _approach_dest_next(self):
-        # if (self.arm.get_position() == self.bowl).all():
-        return ArmState.DROP_OBJECT
-        # else:
-        #     return ArmState.APPROACH_DEST 
+        if np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
+            return ArmState.DROP_OBJECT
+        else:
+            return ArmState.APPROACH_DEST 
 
     def _drop_object(self):
         if self.log_verbose:
-            logger.debug("Arm {} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
-        return ArmState.DONE
+            logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
 
-        
     def _drop_object_next(self):
-        return ArmState.DONE
         # early out if this is being controlled by the parent state machine
         if not self.closed_loop:
             if self.home_when_done:
+                self.arm.set_destination(ARM_HOME_POS)
                 return ArmState.HOME
             else:
                 return ArmState.DONE
@@ -133,42 +134,48 @@ class ArmStateMachine:
         # return PickAndPlaceState.DROP_OBJECT
 
     def _home(self):
-        self._set_arm_dest(ARM_HOME_POS)
+        if self.log_verbose:
+            logger.debug("{} APROACHING HOME at {}".format(self.arm.get_name(), ARM_HOME_POS))
+        self._set_arm_dest(self.arm.get_destination())
 
     def _home_next(self):
         # the home state is used for arm state machines that are completely 
         # finished executing as determined by the parent state machine
-        return ArmState.HOME 
+        return ArmState.DONE#ArmState.HOME 
 
     # def halt(self):
     #     # this sets the desired joint position to the current joint position
     #     self._set_arm_dest(self.arm.get_position(), blocking=False)
 
     def is_done(self):
-        if self.home_when_done:
-            return self.state == ArmState.HOME
-        else:
-            return self.state == ArmState.DONE
+        # if self.home_when_done:
+        #     return self.state == ArmState.HOME
+        # else:
+        #     return self.state == ArmState.DONE
+        return self.state == ArmState.DONE
+
     ### END STATE FUNCTIONS ###
 
     def _set_arm_dest(self, dest):
         if self.log_verbose:
-            logger.debug("Setting arm {} dest to {}".format(self.arm.get_name(), dest))
+            logger.debug("Setting {} dest to {}".format(self.arm.get_name(), dest))
         # Call RRTS algo to plan and execute path
-        # if (self.arm.get_position() != dest).all():
-        path = RRTStar(self.ax, self.obstacles, ARM_HOME_POS, dest)
+        # if np.isclose(self.arm.get_position(), dest, atol=ABS_TOLERANCE).all():
+        path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), dest)
         self._execute_path(self.ax, path)
 
     def _execute_path(self, ax, path):
         logger.info("Executing Path")
         for i in range(path.shape[0]-1):
+            self.arm.set_position(np.array([path[i,0], path[i,1], path[i,2]]))
+            logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
             ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=3, zorder=15)
             plt.pause(PAUSE_TIME)
 
     def run_once(self):
         if self.log_verbose:
             logger.debug("Running state {}".format(self.state))
-        if self.state == ArmState.DONE: #self.is_done():
+        if self.is_done():
             return
         # execute the current state
         self.state_functions[self.state]()
