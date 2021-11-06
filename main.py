@@ -21,8 +21,10 @@ from arm_state_machine import ArmStateMachine, ArmState
 
 ### CONSTANTS ###
 pause_time = 0.0005
-OBJ1_START = np.array([0.0, 0.0, 0.0])
-BOWL =  np.array([0.0, 1, 2.5])
+ARM1_HOME_POS = np.array([0.0, 0.0, 0.0])
+OBJ1 = np.array([0.0, 1.0, 2.5])
+BOWL =  np.array([2, 0.0, 1.0])
+
 
 ### PARAMETERS ###
 show_RRT = False
@@ -47,7 +49,7 @@ def main():
     ax.set_ylim([-2.5, 2.5])
     ax.set_zlim([0.0, 3.0])
 
-     ### SET UP OBSTACLES ###
+    ### SET UP STATIC OBSTACLES AND BOWL ###
     # obstacles_poses = [ [-0.8, 0., 1.5], [ 1., 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
     # obstacles_dims  = [ [1.4, 1.0, 0.2], [1.0, 1.0, 0.2], [3.0, 1.0, 0.2], [3.0, 1.0, 0.2] ]
     obstacles_poses = [[-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5]]
@@ -59,9 +61,15 @@ def main():
 
     for obstacle in obstacles: obstacle.draw(ax)
 
-    arm1 = Arm("PSM1", 5, OBJ1_START)
-    obj1 = Object("OBJ1", arm1, OBJ1_START)
-    arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
+    ### SET UP OBJECTS ###
+    ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=800)
+    # TODO: put in pick_and_place sm
+    ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100)
+    ax.scatter3D(OBJ1[0], OBJ1[1], OBJ1[2], color='green', s=100)
+
+    arm1 = Arm("PSM1", 5, ARM1_HOME_POS)
+    obj1 = Object("OBJ1", arm1, OBJ1)
+    arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, OBJ1)
 
     while (arm1_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()

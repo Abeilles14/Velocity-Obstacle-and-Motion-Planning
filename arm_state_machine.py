@@ -24,7 +24,7 @@ logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
 ### CONSTANTS ###
-ARM_HOME_POS = [0.0, 0.0, 0.0]    #TODO
+ARM_HOME_POS = [0.0, 0.0, 0.0]
 
 class ArmState(Enum):
     APPROACH_OBJECT = 1,
@@ -96,7 +96,9 @@ class ArmStateMachine:
     def _drop_object(self):
         if self.log_verbose:
             logger.debug("Arm {} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
+        return ArmState.DONE
 
+        
     def _drop_object_next(self):
         return ArmState.DONE
         # early out if this is being controlled by the parent state machine

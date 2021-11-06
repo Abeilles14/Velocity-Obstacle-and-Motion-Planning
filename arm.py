@@ -10,4 +10,4 @@ class Arm:
         return self.name
 
     def position(self):
-        return self.position
+        return self.pos
