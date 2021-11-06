@@ -16,17 +16,13 @@ from path_shortening import shorten_path
 from obstacles import Parallelepiped
 from objects import Object
 from arm import Arm
-from rrt3D import RRTStar
+from RRTStar import RRTStar
 from arm_state_machine import ArmStateMachine, ArmState
 
 ### CONSTANTS ###
 pause_time = 0.0005
-
-# Object start and goal positions
-# start = np.array([0.0, 0.0, 0.0])
-# goal =  np.array([0.0, 0.5, 2.5])
 OBJ1_START = np.array([0.0, 0.0, 0.0])
-OBJ1_GOAL =  np.array([0.0, 1, 2.5])
+BOWL =  np.array([0.0, 1, 2.5])
 
 ### PARAMETERS ###
 show_RRT = False
@@ -42,7 +38,7 @@ def add_obstacle(obstacles, pose, dim):
 def main():
     ### SET UP ENV ###
     init_fonts()
-    fig = plt.figure(figsize=(15,15))
+    fig = plt.figure(figsize=(10,10))
     ax = plt.axes(projection='3d')
     ax.set_xlabel('X, [m]')
     ax.set_ylabel('Y, [m]')
@@ -64,9 +60,8 @@ def main():
     for obstacle in obstacles: obstacle.draw(ax)
 
     arm1 = Arm("PSM1", 5, OBJ1_START)
-    obj1 = Object("OBJ1", arm1, OBJ1_START, OBJ1_GOAL)
-    arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1)
-    # RRTStar(ax, obstacles, OBJ1_START, OBJ1_GOAL)
+    obj1 = Object("OBJ1", arm1, OBJ1_START)
+    arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
 
     while (arm1_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()

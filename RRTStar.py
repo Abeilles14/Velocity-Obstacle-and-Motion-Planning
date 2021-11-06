@@ -16,6 +16,10 @@ from utils import init_fonts
 from path_shortening import shorten_path
 from obstacles import Parallelepiped
 
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.INFO)
+
 ### CONSTANTS ###
 pause_time = 0.0005
 
@@ -64,7 +68,7 @@ def closestNode3D(rrt, p):
 
     return closest_node
 
-def RRTStar(ax, obstacles, starts, goals, log_verbose=False):
+def RRTStar(ax, obstacles, starts, goals):
     # parameters
     animate = 1
 
@@ -147,23 +151,21 @@ def RRTStar(ax, obstacles, starts, goals, log_verbose=False):
             end_time = time.time()
             nearGoal = True
 
-            if log_verbose:
-                logging.debug('Reached the goal after %.2f seconds:' % (end_time - start_time))
+            logger.debug('Reached the goal after %.2f seconds:' % (end_time - start_time))
 
         iters += 1
 
-    if log_verbose:
-        logging.debug('Number of iterations passed: %d / %d' %(iters, maxiters))
-        logginb.debug('RRT length: ', len(rrt))
+    logger.debug('Number of iterations passed: %d / %d' %(iters, maxiters))
+    logger.debug('RRT length: ', len(rrt))
 
     # Path construction from RRT:
-    logging.info('Constructing the path...')
+    logger.info('Constructing the path...')
     i = len(rrt) - 1
     while True:
         i = rrt[i].costPrev
         path.append(rrt[i].p)
         if i == 0:
-            logging.info(print('Reached RRT start node'))
+            logger.info('Reached RRT start node')
             break
     path = np.array(path)
 
@@ -174,11 +176,11 @@ def RRTStar(ax, obstacles, starts, goals, log_verbose=False):
             plt.pause(pause_time)
 
     ### DRAW SHORTENED PATH ###
-    logging.info('Shortening the path...')
+    logger.info('Shortening the path...')
     path = shorten_path(path, obstacles, size=80, smoothiters=100)
     path = np.flip(path, axis=0)
     for i in range(path.shape[0]-1):
         ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=3, zorder=15)
         plt.pause(pause_time)
 
-    plt.show()
+    logger.info('Path Complete')

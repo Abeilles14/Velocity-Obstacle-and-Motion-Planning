@@ -5,6 +5,10 @@ from matplotlib import pyplot as plt
 from random import random
 import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
+
 def isCollisionFreeVertex(obstacles, point):
     x,y,z = point
     for obstacle in obstacles:

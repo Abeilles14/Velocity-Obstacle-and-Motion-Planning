@@ -13,11 +13,15 @@ from enum import Enum
 import logging
 
 from utils import init_fonts
-from rrt3D import RRTStar
+from RRTStar import RRTStar
 from path_shortening import shorten_path
 from obstacles import Parallelepiped
 from arm import Arm
 from objects import Object
+
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
 
 ### CONSTANTS ###
 ARM_HOME_POS = [0.0, 0.0, 0.0]    #TODO
@@ -31,17 +35,18 @@ class ArmState(Enum):
     DONE = 6
 
 class ArmStateMachine:
-    def __init__(self, ax, obstacles, arm, obj, log_verbose=True):
+    def __init__(self, ax, obstacles, arm, obj, bowl, log_verbose=True):
         self.state = ArmState.APPROACH_OBJECT
         self.arm = arm
         self.obj = obj
+        self.bowl = bowl
         self.log_verbose = log_verbose
         self.ax = ax
         self.obstacles = obstacles
 
         if self.log_verbose:
-            logging.debug("ArmStateMachine:__init__")
-            logging.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
+            logger.debug("ArmStateMachine:__init__")
+            logger.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
 
         self.state_functions = {
             ArmState.APPROACH_OBJECT : self._approach_object,
@@ -61,7 +66,7 @@ class ArmStateMachine:
     ### STATE FUNCTIONS ###
     def _approach_object(self):
         if self.log_verbose:
-            logging.debug("Arm {} approaching Obj {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
+            logger.debug("Arm {} APPROACHING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
         self._set_arm_dest(self.obj.position())
 
     def _approach_object_next(self):
@@ -72,14 +77,14 @@ class ArmStateMachine:
     
     def _grab_object(self):
         if self.log_verbose:
-            logging.debug("Arm {} grabbing Obj {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
+            logger.debug("Arm {} GRABBING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
 
     def _grab_object_next(self):
         return ArmState.APPROACH_DEST
 
     def _approach_dest(self):
         if self.log_verbose:
-            logging.debug("Arm {} approaching Obj {} goal at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.goal()))
+            logger.debug("Arm {} APPROACHING {} GOAL at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
         self._set_arm_dest(self.obj.goal())
 
     def _approach_dest_next(self):
@@ -90,7 +95,7 @@ class ArmStateMachine:
 
     def _drop_object(self):
         if self.log_verbose:
-            logging.debug("Arm {} dropping Obj {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
+            logger.debug("Arm {} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
 
     def _drop_object_next(self):
         return ArmState.DONE
@@ -141,14 +146,14 @@ class ArmStateMachine:
 
     def _set_arm_dest(self, dest):
         if self.log_verbose:
-            logging.debug("Setting arm {} dest to {}".format(self.arm.get_name(), dest))
+            logger.debug("Setting arm {} dest to {}".format(self.arm.get_name(), dest))
         # Call RRTS algo to plan and execute path
         if (self.arm.position() != dest).all():
             RRTStar(self.ax, self.obstacles, self.arm.position(), dest)
 
     def run_once(self):
         if self.log_verbose:
-            logging.debug("Running state {}".format(self.state))
+            logger.debug("Running state {}".format(self.state))
         if self.state == ArmState.DONE: #self.is_done():
             return
         # execute the current state
