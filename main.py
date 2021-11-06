@@ -67,9 +67,11 @@ def main():
     ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100)
     ax.scatter3D(OBJ1[0], OBJ1[1], OBJ1[2], color='green', s=100)
 
-    arm1 = Arm("PSM1", 5, ARM1_HOME_POS)
+    arm1 = Arm("PSM1", 5, ARM1_HOME_POS, OBJ1)
     obj1 = Object("OBJ1", arm1, OBJ1)
-    arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, OBJ1)
+    arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
+
+    # RRTStar(ax, obstacles, ARM1_HOME_POS, OBJ1)
 
     while (arm1_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()

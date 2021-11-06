@@ -25,6 +25,7 @@ logger.setLevel(logging.DEBUG)
 
 ### CONSTANTS ###
 ARM_HOME_POS = [0.0, 0.0, 0.0]
+PAUSE_TIME = 0.0005
 
 class ArmState(Enum):
     APPROACH_OBJECT = 1,
@@ -35,14 +36,18 @@ class ArmState(Enum):
     DONE = 6
 
 class ArmStateMachine:
-    def __init__(self, ax, obstacles, arm, obj, bowl, log_verbose=True):
-        self.state = ArmState.APPROACH_OBJECT
+    def __init__(self, ax, obstacles, arm, obj, bowl,
+                 closed_loop=False, home_when_done=False, log_verbose=True):
+        self.ax = ax
+        self.obstacles = obstacles
         self.arm = arm
         self.obj = obj
         self.bowl = bowl
+        self.closed_loop = closed_loop
+        self.home_when_done = home_when_done
         self.log_verbose = log_verbose
-        self.ax = ax
-        self.obstacles = obstacles
+
+        self.state = ArmState.APPROACH_OBJECT
 
         if self.log_verbose:
             logger.debug("ArmStateMachine:__init__")
@@ -53,14 +58,14 @@ class ArmStateMachine:
             ArmState.GRAB_OBJECT : self._grab_object,
             ArmState.APPROACH_DEST : self._approach_dest,
             ArmState.DROP_OBJECT : self._drop_object,
-            # ArmState.HOME : self._home,
+            ArmState.HOME : self._home,
         }
         self.next_functions = {
             ArmState.APPROACH_OBJECT : self._approach_object_next,
             ArmState.GRAB_OBJECT : self._grab_object_next,
             ArmState.APPROACH_DEST : self._approach_dest_next,
             ArmState.DROP_OBJECT : self._drop_object_next,
-            # ArmState.HOME : self._home_next
+            ArmState.HOME : self._home_next
         }
 
     ### STATE FUNCTIONS ###
@@ -70,10 +75,10 @@ class ArmStateMachine:
         self._set_arm_dest(self.obj.position())
 
     def _approach_object_next(self):
-        if (self.arm.position() == self.obj.position()).all():
-            return ArmState.GRAB_OBJECT
-        else:
-            return ArmState.APPROACH_OBJECT
+        # if (self.arm.get_position() == self.obj.position()).all():
+        return ArmState.GRAB_OBJECT
+        # else:
+        #     return ArmState.APPROACH_OBJECT
     
     def _grab_object(self):
         if self.log_verbose:
@@ -84,14 +89,14 @@ class ArmStateMachine:
 
     def _approach_dest(self):
         if self.log_verbose:
-            logger.debug("Arm {} APPROACHING {} GOAL at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
-        self._set_arm_dest(self.obj.goal())
+            logger.debug("Arm {} APPROACHING DEST at {}".format(self.arm.get_name(), self.bowl))
+        self._set_arm_dest(self.bowl)
 
     def _approach_dest_next(self):
-        if (self.arm.position() == self.obj.goal()).all():
-            return ArmState.DROP_OBJECT
-        else:
-            return ArmState.APPROACH_DEST 
+        # if (self.arm.get_position() == self.bowl).all():
+        return ArmState.DROP_OBJECT
+        # else:
+        #     return ArmState.APPROACH_DEST 
 
     def _drop_object(self):
         if self.log_verbose:
@@ -102,11 +107,11 @@ class ArmStateMachine:
     def _drop_object_next(self):
         return ArmState.DONE
         # early out if this is being controlled by the parent state machine
-        # if not self.closed_loop:
-        #     if self.home_when_done:
-        #         return PickAndPlaceState.HOME
-        #     else:
-        #         return PickAndPlaceState.DONE
+        if not self.closed_loop:
+            if self.home_when_done:
+                return ArmState.HOME
+            else:
+                return ArmState.DONE
 
         # elif len(self.world.objects) > 0:
         #     # there are objects left, find one and go to APPROACH_OBJECT
@@ -125,33 +130,40 @@ class ArmStateMachine:
         # else:
         #     return PickAndPlaceState.HOME
 
-        #return PickAndPlaceState.DROP_OBJECT
+        # return PickAndPlaceState.DROP_OBJECT
 
-    # def _home(self):
-    #     self._set_arm_dest(ARM_HOME_POS)
+    def _home(self):
+        self._set_arm_dest(ARM_HOME_POS)
 
-    # def _home_next(self):
-    #     # the home state is used for arm state machines that are completely 
-    #     # finished executing as determined by the parent state machine
-    #     return ArmState.HOME 
+    def _home_next(self):
+        # the home state is used for arm state machines that are completely 
+        # finished executing as determined by the parent state machine
+        return ArmState.HOME 
 
     # def halt(self):
     #     # this sets the desired joint position to the current joint position
-    #     self.psm.move(self.psm.get_current_position(), blocking=False)
+    #     self._set_arm_dest(self.arm.get_position(), blocking=False)
 
-    # def is_done(self):
-    #     if self.home_when_done:
-    #         return self.state == PickAndPlaceState.HOME and vector_eps_eq(self.psm.get_current_position().p, PSM_HOME_POS) 
-    #     else:
-    #         return self.state == PickAndPlaceState.DONE
+    def is_done(self):
+        if self.home_when_done:
+            return self.state == ArmState.HOME
+        else:
+            return self.state == ArmState.DONE
     ### END STATE FUNCTIONS ###
 
     def _set_arm_dest(self, dest):
         if self.log_verbose:
             logger.debug("Setting arm {} dest to {}".format(self.arm.get_name(), dest))
         # Call RRTS algo to plan and execute path
-        if (self.arm.position() != dest).all():
-            RRTStar(self.ax, self.obstacles, self.arm.position(), dest)
+        # if (self.arm.get_position() != dest).all():
+        path = RRTStar(self.ax, self.obstacles, ARM_HOME_POS, dest)
+        self._execute_path(self.ax, path)
+
+    def _execute_path(self, ax, path):
+        logger.info("Executing Path")
+        for i in range(path.shape[0]-1):
+            ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=3, zorder=15)
+            plt.pause(PAUSE_TIME)
 
     def run_once(self):
         if self.log_verbose:

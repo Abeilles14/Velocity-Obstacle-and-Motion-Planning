@@ -1,13 +1,13 @@
 # PICK AND PLACE OBJECTS
 
 class Object:
-    def __init__(self, name, arm, start):
+    def __init__(self, name, arm, position):
         self.name = name
         self.arm = arm
-        self.start = start
+        self.pos = position
 
     def get_name(self):
         return self.name
 
     def position(self):
-        return self.start
+        return self.pos
