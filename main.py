@@ -25,11 +25,10 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 ### CONSTANTS ###
-pause_time = 0.0005
 ARM1_HOME_POS = np.array([0.0, 0.15, 0.0])
 ARM2_HOME_POS = np.array([0.0, -0.15, 0.0])
 OBJ1 = np.array([0.0, 1.0, 2.5])
-OBJ2 = np.array([0.0, -1.0, 2.5])
+OBJ2 = np.array([-0.5, -1.0, 2.5])
 BOWL =  np.array([2, 0.0, 1.0])
 
 ### PARAMETERS ###
@@ -88,9 +87,10 @@ def main():
 
     logger.info("Pick and Place Simulation Start")
 
-    while (arm1_sm.state != ArmState.HOME) or (arm2_sm.state != ArmState.HOME): #should be HOME
+    while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
         arm2_sm.run_once()
+        # check for collisions here?
 
     logger.info("Pick and Place Simulation End")
 

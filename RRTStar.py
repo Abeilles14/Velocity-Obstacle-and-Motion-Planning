@@ -21,7 +21,10 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 ### CONSTANTS ###
-pause_time = 0.0005
+PAUSE_TIME = 0.0005
+STEP_SIZE = 0.03
+SAMPLE_SIZE = 80
+SMOOTH_ITERS = 100
 
 ### PARAMETERS ###
 show_RRT = False
@@ -122,7 +125,7 @@ def RRTStar(ax, obstacles, start, goal):
         # draw RRT node tree
         if show_RRT:
             ax.plot([closest_node.p[0], new_node.p[0]], [closest_node.p[1], new_node.p[1]], [closest_node.p[2], new_node.p[2]],color = 'b', zorder=5)
-            plt.pause(pause_time)
+            plt.pause(PAUSE_TIME)
         
         # Check if new vertice is in collision
         collFree = isCollisionFreeEdge(obstacles, closest_node.p, new_node.p)
@@ -170,11 +173,11 @@ def RRTStar(ax, obstacles, start, goal):
     if show_RRT:
         for i in range(path.shape[0]-1):
             ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'g', linewidth=3, zorder=10)
-            plt.pause(pause_time)
+            plt.pause(PAUSE_TIME)
 
     ### DRAW SHORTENED PATH ###
     logger.info('Shortening the path...')
-    path = shorten_path(path, obstacles, size=80, smoothiters=100)
+    path = shorten_path(path, obstacles, size=SAMPLE_SIZE, step=STEP_SIZE, smoothiters=SMOOTH_ITERS)
     path = np.flip(path, axis=0)
 
     logger.info('Final Path Found!')
