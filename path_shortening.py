@@ -32,7 +32,6 @@ def isCollisionFreeEdge(obstacles, closest_vert, p):
 
     return collFree
 
-
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points
 # generate the coordinates on the curve by cumulative summing

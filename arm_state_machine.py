@@ -176,14 +176,9 @@ class ArmStateMachine:
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
         
         self.arm.set_position(np.array([path[0,0], path[0,1], path[0,2]]))
-        ax.plot([path[0,0], path[1,0]], [path[0,1], path[1,1]], [path[0,2], path[1,2]], color = 'orange', linewidth=2, zorder=15)
+        ax.plot(path[0,0], path[0,1], path[0,2], 'o', color='orange', markersize=3)
         self.path = np.delete(path, 0, axis=0)
         plt.pause(PAUSE_TIME)
-        # for i in range(path.shape[0]-1):
-        #     self.arm.set_position(np.array([path[i,0], path[i,1], path[i,2]]))
-        #     logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
-        #     ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=3, zorder=15)
-        #     plt.pause(PAUSE_TIME)
 
     def run_once(self):
         if self.log_verbose:
@@ -193,7 +188,6 @@ class ArmStateMachine:
         
         # execute the current state
         self.state_functions[self.state]()
-
         self.state = self.next_functions[self.state]()
 
     def get_path(self):

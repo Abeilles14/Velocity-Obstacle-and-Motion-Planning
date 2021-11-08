@@ -91,6 +91,7 @@ def main():
         arm1_sm.run_once()
         arm2_sm.run_once()
         # check for collisions here?
+        #inc/dec individual arm speeds
 
     logger.info("Pick and Place Simulation End")
 
