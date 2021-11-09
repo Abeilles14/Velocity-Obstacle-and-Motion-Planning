@@ -30,6 +30,7 @@ ARM2_HOME_POS = np.array([0.0, -0.15, 0.0])
 OBJ1 = np.array([0.0, 1.0, 2.5])
 OBJ2 = np.array([-0.5, -1.0, 2.5])
 BOWL =  np.array([2, 0.0, 1.0])
+INIT_VEL = 0.05
 
 ### PARAMETERS ###
 show_RRT = False
@@ -76,8 +77,8 @@ def main():
     ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100)
     ax.scatter3D(OBJ2[0], OBJ2[1], OBJ2[2], color='#99ff99', s=100)
 
-    arm1 = Arm(name="PSM1", velocity=5, position=ARM1_HOME_POS, destination=OBJ1)
-    arm2 = Arm(name="PSM2", velocity=5, position=ARM2_HOME_POS, destination=OBJ2)
+    arm1 = Arm(name="PSM1", position=ARM1_HOME_POS, destination=OBJ1, velocity=INIT_VEL)
+    arm2 = Arm(name="PSM2", position=ARM2_HOME_POS, destination=OBJ2, velocity=INIT_VEL)
     obj1 = Object(name="OBJ1", arm=arm1, position=OBJ1)
     obj2 = Object(name="OBJ2", arm=arm2, position=OBJ2)
     arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
@@ -90,8 +91,10 @@ def main():
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
         arm2_sm.run_once()
-        # check for collisions here?
-        #inc/dec individual arm speeds
+
+        # check for intersection
+            # if collision imminent, up one speed, lower speed
+        # else if no intersection, reset speed
 
     logger.info("Pick and Place Simulation End")
 

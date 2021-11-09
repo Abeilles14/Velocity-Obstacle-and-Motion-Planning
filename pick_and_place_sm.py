@@ -1,1 +1,0 @@
-# pick and place sm

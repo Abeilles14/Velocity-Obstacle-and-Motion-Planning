@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 
 
-# Helper functions
 def isCollisionFreeVertex(obstacles, xy):
     collFree = True
 

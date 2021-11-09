@@ -1,25 +1,42 @@
+# COLLISION AVOIDANCE MECHANISM
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import time
+from mpl_toolkits import mplot3d
+from enum import Enum
+import logging
 
-fig, ax = plt.subplots()
+from RRTStar import RRTStar
+from arm import Arm
+from objects import Object
 
-g = 9.8                                                        #value of gravity
-v = 10.0                                                       #initial velocity
-theta = 40.0 * np.pi / 180.0                                   #initial angle of launch in radians
-t = 2 * v * np.sin(theta) / g                                  
-t = np.arange(0, 0.1, 0.01)                                    #time of flight into an array
-x = np.arange(0, 0.1, 0.01)
-line, = ax.plot(x, v * np.sin(theta) * x - (0.5) * g * x**2)   # plot of x and y in time
+def main():
+    fig = plt.figure(figsize=(10,10))
+    ax = plt.axes(projection='3d')
+    ax.set_xlabel('X, [m]')
+    ax.set_ylabel('Y, [m]')
+    ax.set_zlabel('Z, [m]')
+    ax.set_xlim([-2.5, 2.5])
+    ax.set_ylim([-2.5, 2.5])
+    ax.set_zlim([0.0, 3.0])
 
-def animate(i):
-    """change the divisor of i to get a faster (but less precise) animation """
-    line.set_xdata(v * np.cos(theta) * (t + i /100.0))
-    line.set_ydata(v * np.sin(theta) * (x + i /100.0) - (0.5) * g * (x + i / 100.0)**2)  
-    return line,
+    x = np.arange(0, 1000)
+    f = np.arange(0, 1000)
+    g = np.sin(np.arange(0, 10, 0.01) * 2) * 1000
 
-plt.axis([0.0, 10.0, 0.0, 5.0])
-ax.set_autoscale_on(False)
+    plt.plot(x, f, '-')
+    plt.plot(x, g, '-')
 
-ani = animation.FuncAnimation(fig, animate, np.arange(1, 200))
-plt.show()
+    # find_intersection(f,g)
+    idx = np.argwhere(np.diff(np.sign(f - g))).flatten()
+    plt.plot(x[idx], f[idx], 'ro')
+    plt.show
+
+
+def find_intersection(path1, path2):
+    idx = np.argwhere(np.diff(np.sign(path1 - path2))).flatten()
+    plt.plot(path1[idx], path2[idx], 'ro')
+    plt.show
+
+if __name__ == '__main__':
+    main()

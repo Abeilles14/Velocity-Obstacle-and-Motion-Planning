@@ -1,11 +1,12 @@
 # ARM OBJECT
 
 class Arm:
-    def __init__(self, name, velocity, position, destination):
+    def __init__(self, name, position, destination, velocity):
         self.name = name
         self.vel = velocity
         self.pos = position
         self.dest = destination
+        self.vel = velocity
 
     def get_name(self):
         return self.name
@@ -21,3 +22,9 @@ class Arm:
 
     def set_destination(self, destination):
         self.dest = destination
+
+    def get_velocity(self):
+        return self.vel
+
+    def set_velocity(self, velocity):
+        self.vel = velocity

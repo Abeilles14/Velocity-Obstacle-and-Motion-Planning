@@ -12,12 +12,12 @@ from mpl_toolkits import mplot3d
 from enum import Enum
 import logging
 
-from utils import init_fonts
 from RRTStar import RRTStar
 from path_shortening import shorten_path
 from obstacles import Parallelepiped
 from arm import Arm
 from objects import Object
+from velocity_control import interpolate
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -27,6 +27,7 @@ logger.setLevel(logging.DEBUG)
 ARM_HOME_POS = [0.0, 0.0, 0.0]
 PAUSE_TIME = 0.0001
 ABS_TOLERANCE = 0.055
+STEP_SIZE = 0.01 #controls speed of paths
 
 class ArmState(Enum):
     APPROACH_OBJECT = 1,
@@ -171,11 +172,15 @@ class ArmStateMachine:
                 self.compute_path = False
             self._execute_path(self.ax, self.path)
 
-    def _execute_path(self, ax, path):
+    def _execute_path(self, ax, P):
         logger.info("Executing Path")
-        logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
-        
+
+        # velocity control
+        step = self.arm.get_velocity()
+        path = interpolate(P, step)
+
         self.arm.set_position(np.array([path[0,0], path[0,1], path[0,2]]))
+        logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
         ax.plot(path[0,0], path[0,1], path[0,2], 'o', color='orange', markersize=3)
         self.path = np.delete(path, 0, axis=0)
         plt.pause(PAUSE_TIME)

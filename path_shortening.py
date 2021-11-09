@@ -32,39 +32,7 @@ def isCollisionFreeEdge(obstacles, closest_vert, p):
 
     return collFree
 
-# Convert xyz-data to a parametrized curve
-# calculate all distances between the points
-# generate the coordinates on the curve by cumulative summing
-# interpolate the x- and y-coordinates independently with respect to the new coords
-def interpolate(P, size, step, show_interplot=False):
-    x, y, z = P.T
-    xd = np.diff(x)
-    yd = np.diff(y)
-    zd = np.diff(z)
-    dist = np.sqrt(xd**2 + yd**2 + zd**2)
-    u = np.cumsum(dist)
-    u = np.hstack([[0], u])
-
-    # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
-    t = np.arange(0, u.max()+step, step)
-    xn = np.interp(t, u, x)
-    yn = np.interp(t, u, y)
-    zn = np.interp(t, u, z)
-
-    if show_interplot:
-        f = plt.figure()
-        ax = plt.axes(projection='3d')
-        ax.plot(x, y, z, 'o', alpha=0.3)
-        ax.plot(xn, yn, zn, 'ro', markersize=2)
-        ax.set_xlim([-2.5, 2.5])
-        ax.set_ylim([-2.5, 2.5])
-        ax.set_zlim([0.0, 3.0])
-    
-    path = np.column_stack((xn, yn, zn))
-    # path.reshape((size, 3))
-    return path
-
-def shorten_path(P, obstacles, size=20, step=0.05, smoothiters=30, log_verbose=False):
+def shorten_path(P, obstacles, smoothiters=30, log_verbose=False):
     # INPUTS
     #   P - path to get smoothed (after RRT algorithm)
     #   obstacles - says where the obstacles are
@@ -126,9 +94,8 @@ def shorten_path(P, obstacles, size=20, step=0.05, smoothiters=30, log_verbose=F
         iters = iters + 1
 #         plt.plot(P[:,0], P[:,1], '--', linewidth=3)
     
-    P_smooth = interpolate(P, size, step)
     if log_verbose:
-        logging.debug("Final Path Length: {}".format(len(P_smooth)))
-        logging.debug("Final Path: {}".format(P_smooth))
+        logging.debug("Final Path Length: {}".format(len(P)))
+        logging.debug("Final Path: {}".format(P))
     
-    return P_smooth
+    return P

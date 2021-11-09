@@ -21,13 +21,19 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 ### CONSTANTS ###
-PAUSE_TIME = 0.0 #0.0005
-STEP_SIZE = 0.1 #controls speed of paths?
+PAUSE_TIME = 0.0005
+STEP_SIZE = 0.01 #controls speed of paths
 SAMPLE_SIZE = 80
 SMOOTH_ITERS = 100
 
 ### PARAMETERS ###
 show_RRT = False
+animate = 1
+# RRT Initialization
+maxiters  = 5000
+minDistGoal = 0.05 # Convergence criterion: success when the tree reaches within 0.25 in distance from the goal.
+d = 0.1#0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
+    
 
 class Node3D:
     def __init__(self):
@@ -72,16 +78,7 @@ def closestNode3D(rrt, p):
     return closest_node
 
 def RRTStar(ax, obstacles, start, goal):
-    # parameters
-    animate = 1
-
-    # RRT Initialization
-    maxiters  = 5000
     nearGoal = False # This will be set to true if goal has been reached
-    minDistGoal = 0.05 # Convergence criterion: success when the tree reaches within 0.25 in distance from the goal.
-    d = 0.1#0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
-    
-    # start = np.array([0.0, 0.0, 0.0])
 
     # Initialize RRT. The RRT will be represented as a 2 x N list of points.
     # So each column represents a vertex of the tree.
@@ -177,7 +174,7 @@ def RRTStar(ax, obstacles, start, goal):
 
     ### DRAW SHORTENED PATH ###
     logger.info('Shortening the path...')
-    path = shorten_path(path, obstacles, size=SAMPLE_SIZE, step=STEP_SIZE, smoothiters=SMOOTH_ITERS)
+    path = shorten_path(path, obstacles, smoothiters=SMOOTH_ITERS)
     path = np.flip(path, axis=0)
 
     # plot paths
