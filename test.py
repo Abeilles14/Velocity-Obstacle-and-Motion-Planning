@@ -180,6 +180,8 @@ def main():
     THRESHOLD_DIST = 2
     INIT_VEL = 0.05
 
+    animate = False
+
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ax.set_xlabel('X, [m]')
@@ -216,25 +218,32 @@ def main():
     # check whether any pts in paths are within threshold
     idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
     idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
-    path_range = min(path1[idx1:,:].size, path2[idx2:,:].size)    # get minimum of both remaining paths
-    print("PATH RANGES: {}, {}".format(path1[idx1:,:].size, path2[idx2:,:].size))
-    print(path_range)
-    for i in range(min(path1.size, path2.size)-1):
-        idx1 = np.where(path1 == arm1.get_position())[0] + i
-        idx2 = np.where(path2 == arm2.get_position())[0] + i
+    path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
+    print("PATH RANGES: {}, {}".format(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0]))
+
+    intersect1 = []
+    intersect2 = []
+    for i in range(path_range-1):
+        idx1 = np.where(path1 == arm1.get_position())[0][0] + i
+        idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+        # print("IDX: {}, {}".format(idx1, idx2))
         arm_dist = euclidean_distance(path1[idx1], path2[idx2])
+
         print("POS: {}, {}".format(path1[idx1], path2[idx2]))
         print("ARM_DIST: {}".format(arm_dist))
-
         plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
         plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
         
         if (arm_dist <= THRESHOLD_DIST).all():
             print("COLLISION IMMINENT!")
+            intersect1.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
+            intersect2.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
             plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
             plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
         
         plt.pause(0.0005)
+        
+    print("INTERSECTIONS: {}".format(intersect1))
 
     plt.show()
 
