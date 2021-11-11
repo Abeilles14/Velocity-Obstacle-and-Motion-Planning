@@ -176,7 +176,9 @@ def geometry3D_test():
     r.show()
 
 def main():
-    STEP_SIZE = 0.01 #controls speed of paths
+    STEP_SIZE = 0.05 #controls speed of paths
+    THRESHOLD_DIST = 2
+    INIT_VEL = 0.05
 
     fig = plt.figure()
     ax = plt.axes(projection='3d')
@@ -190,22 +192,55 @@ def main():
     l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
     l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [8.0,4.0,4.0]])
 
+    # initialize arms
+    # start at 1 pts of each lines, end at last pt of each line
+    arm1 = Arm(name="PSM1", position=l1[0], destination=l1[l1.shape[0]-1], velocity=INIT_VEL)
+    arm2 = Arm(name="PSM2", position=l2[0], destination=l2[l2.shape[0]-1], velocity=INIT_VEL)
+
     plt.plot(l1[:,0], l1[:,1], l1[:,2], 'o', color='orange')
     plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
+
+    # initialize paths
+    path1 = interpolate(l1, STEP_SIZE)
+    path2 = interpolate(l2, STEP_SIZE)
 
     for i in range(l1.shape[0]-1):
         ax.plot([l1[i,0], l1[i+1,0]], [l1[i,1], l1[i+1,1]], [l1[i,2], l1[i+1,2]], color = 'orange', linewidth=1, zorder=15)
     for i in range(l2.shape[0]-1):
         ax.plot([l2[i,0], l2[i+1,0]], [l2[i,1], l2[i+1,1]], [l2[i,2], l2[i+1,2]], color = 'blue', linewidth=1, zorder=15)
 
-    path1 = interpolate(l1, step)
-    path2 = interpolate(l2, step)
 
-    while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE):
+    arm1.set_position(path1[0])    # start at pt. 30 of path1
+    arm2.set_position(path2[70])    # start at pt. 10 of path2
 
+    # check whether any pts in paths are within threshold
+    idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
+    idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    path_range = min(path1[idx1:,:].size, path2[idx2:,:].size)    # get minimum of both remaining paths
+    print("PATH RANGES: {}, {}".format(path1[idx1:,:].size, path2[idx2:,:].size))
+    print(path_range)
+    for i in range(min(path1.size, path2.size)-1):
+        idx1 = np.where(path1 == arm1.get_position())[0] + i
+        idx2 = np.where(path2 == arm2.get_position())[0] + i
+        arm_dist = euclidean_distance(path1[idx1], path2[idx2])
+        print("POS: {}, {}".format(path1[idx1], path2[idx2]))
+        print("ARM_DIST: {}".format(arm_dist))
+
+        plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
+        plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
+        
+        if (arm_dist <= THRESHOLD_DIST).all():
+            print("COLLISION IMMINENT!")
+            plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
+            plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
+        
+        plt.pause(0.0005)
 
     plt.show()
 
+def euclidean_distance(point1, point2):
+    distance = np.linalg.norm(point1-point2)
+    return distance
 
 if __name__ == '__main__':
     main()
