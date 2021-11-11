@@ -7,23 +7,29 @@ from enum import Enum
 import logging
 import pickle
 from scipy.interpolate import interp1d
+from ground.base import get_context
+from bentley_ottmann.planar import segments_intersect
+from Geometry3D import *
 
-from shapely.geometry import LineString
+from shapely.geometry import LineString, MultiPoint, shape
 from RRTStar import RRTStar
 from arm import Arm
 from objects import Object
+from velocity_control import interpolate
+from arm import Arm
 
-def main():
+def find_intersections():
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ax.set_xlabel('X, [m]')
     ax.set_ylabel('Y, [m]')
     ax.set_zlabel('Z, [m]')
-    ax.set_ylim([0,12])
     ax.set_xlim([0,12])
+    ax.set_ylim([0,12])
+    ax.set_zlim([0,12])
 
-    l1 = np.array([[0,0,0], [10,8,8]])
-    l2 = np.array([[2,0,3], [6,8,8], [8,4,4]])
+    l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
+    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [8.0,4.0,4.0]])
 
     plt.plot(l1[:,0], l1[:,1], l1[:,2], 'o', color='orange')
     plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
@@ -34,29 +40,172 @@ def main():
         ax.plot([l2[i,0], l2[i+1,0]], [l2[i,1], l2[i+1,1]], [l2[i,2], l2[i+1,2]], color = 'blue', linewidth=1, zorder=15)
 
     # check 2d intersections x-y axis
-    line1 = LineString(l1)
-    line2 = LineString(l2)
-    intersect_pts = line1.intersection(line2)
+    l1_xy = LineString(l1[:,:2])
+    l2_xy = LineString(l2[:,:2])
+    intersect_xy = l1_xy.intersection(l2_xy)
+    print("GEOM TYPE: {}".format(intersect_xy.geom_type))
 
-    pts_list = []
-    for point in intersect_pts:
-        pts_list.append([point.x, point.y, point.z])
+    intersect_list = []
+    if intersect_xy:       # check if any intersections
+        if intersect_xy.geom_type == "MultiPoint":  # multiple intersections
+            for point in intersect_xy.geoms:
+                intersect_list.append([point.x, point.y])
+        elif intersect_xy.geom_type == "Point":  # single intersection
+            intersect_list.append([intersect_xy.x, intersect_xy.y])
+        elif intersect_xy.geom_type == "LineString":   # infinite intersection
+            intersect_list = np.asarray(intersect_xy)
+    intersections_xy = np.array(intersect_list)
+    print("INTERSECTIONS: {}".format(intersections_xy))
+    plt.plot(intersections_xy[:,0], intersections_xy[:,1], 0, 'o', color='cyan')
 
-    intersect_list = np.array(pts_list)
-    print(intersect_list)
-    
     # check 2d intersections x-z axis
-    plt.plot(intersect_list[:,0], intersect_list[:,1], intersect_list[:,2], 'ro', color='cyan')
-    
+    l1_xz = LineString(l1[:,0:3:2])
+    l2_xz = LineString(l2[:,0:3:2])
+    intersect_xz = l1_xz.intersection(l2_xz)
+    print("GEOM TYPE: {}".format(intersect_xz.geom_type))
+
+    intersect_list = []
+    if intersect_xz:       # check if any intersections
+        if intersect_xz.geom_type == "MultiPoint":  # multiple intersections
+            for point in intersect_xz.geoms:
+                intersect_list.append([point.x, point.y])
+        elif intersect_xz.geom_type == "Point":  # single intersection
+            intersect_list.append([intersect_xz.x, intersect_xz.y])
+        elif intersect_xz.geom_type == "LineString":   # infinite intersection
+            intersect_list = np.asarray(intersect_xz)
+    intersections_xz = np.array(intersect_list)
+    print("INTERSECTIONS: {}".format(intersections_xz))
+    plt.plot(intersections_xz[:,0], 0, intersections_xz[:,1], 'o', color='cyan')
+
     # check 2d intersections y-z axis
+    l1_yz = LineString(l1[:,1:])
+    l2_yz = LineString(l2[:,1:])
+    intersect_yz = l1_yz.intersection(l2_yz)
+    print("GEOM TYPE: {}".format(intersect_yz.geom_type))
+
+    intersect_list = []
+    if intersect_yz:       # check if any intersections
+        if intersect_yz.geom_type == "MultiPoint":  # multiple intersections
+            for point in intersect_yz:
+                intersect_list.append([point.x, point.y])
+        elif intersect_yz.geom_type == "Point":  # single intersection
+            intersect_list.append([intersect_yz.x, intersect_yz.y])
+        elif intersect_yz.geom_type == "LineString":   # infinite intersection
+            intersect_list = np.asarray(intersect_yz.coords)
+    intersections_yz = np.array(intersect_list)
+    print("INTERSECTIONS: {}".format(intersections_yz))
+    for i in range(intersections_yz.shape[0]-1):
+        ax.plot([0,0], [intersections_yz[i,0], intersections_yz[i+1,0]], [intersections_yz[i,1], intersections_yz[i+1,1]], color = 'cyan', linewidth=1, zorder=15)
     
-    
+
+
+
+    # plt.plot(intersect_list[:,0], , intersect_list[:,2], 'ro', color='cyan')
     plt.show()
 
-def find_intersection(path1, path2):
-    idx = np.argwhere(np.diff(np.sign(path1 - path2))).flatten()
-    plt.plot(path1[idx], path2[idx], 'ro')
-    plt.show
+def bentley_ottmann_alg():
+    context = get_context()
+    Point, Segment = context.point_cls, context.segment_cls
+    unit_segments = [Segment(Point(0, 0), Point(1, 0)), Segment(Point(0, 0), Point(0, 1))]
+    print(segments_intersect(unit_segments))
+
+
+def geometry3d():
+    a = Point(1,1,1)
+    b = Point(-1,1,1)
+    c = Point(-1,-1,1)
+    d = Point(1,-1,1)
+    e = Point(1,1,-1)
+    f = Point(-1,1,-1)
+    g = Point(-1,-1,-1)
+    h = Point(1,-1,-1)
+    cph0 = Parallelepiped(Point(-1,-1,-1),Vector(2,0,0),Vector(0,2,0),Vector(0,0,2))
+    cpg12 = ConvexPolygon((e,c,h))
+    cpg13 = ConvexPolygon((e,f,c))
+    cpg14 = ConvexPolygon((c,f,g))
+    cpg15 = ConvexPolygon((h,c,g))
+    cpg16 = ConvexPolygon((h,g,f,e))
+    cph1 = ConvexPolyhedron((cpg12,cpg13,cpg14,cpg15,cpg16))
+    a1 = Point(1.5,1.5,1.5)
+    b1 = Point(-0.5,1.5,1.5)
+    c1 = Point(-0.5,-0.5,1.5)
+    d1 = Point(1.5,-0.5,1.5)
+    e1 = Point(1.5,1.5,-0.5)
+    f1 = Point(-0.2,1.5,-0.5)
+    g1 = Point(-0.2,-0.5,-0.5)
+    h1 = Point(1.5,-0.5,-0.5)
+    
+    plane = Plane(Point(4,4), Point(8,8), Point(0.0))
+    
+    cpg6 = ConvexPolygon((a1,d1,h1,e1))
+    cpg7 = ConvexPolygon((a1,e1,f1,b1))
+    cpg8 = ConvexPolygon((c1,b1,f1,g1))
+    cpg9 = ConvexPolygon((c1,g1,h1,d1))
+    cpg10 = ConvexPolygon((a1,b1,c1,d1))
+    cpg11 = ConvexPolygon((e1,h1,g1,f1))
+    cph2 = ConvexPolyhedron((cpg6,cpg7,cpg8,cpg9,cpg10,cpg11))
+    cph3 = intersection(cph0,cph2)
+    cph4 = intersection(cph1,cph2)
+    # pts_inter = intersection()
+    r = Renderer()
+    # r.add((plane,'r',1),normal_length = 0)
+    # r.add((cph0,'r',1),normal_length = 0)
+    # r.add((cph1,'r',1),normal_length = 0)
+    # r.add((cph2,'g',1),normal_length = 0)
+    # r.add((cph3,'b',3),normal_length = 0.5)
+    # r.add((cph4,'y',3),normal_length = 0.5)
+    r.show()
+
+def geometry3D_test():
+    l1p1 = Point(0.0,0.0,0.0)
+    l1p2 = Point(10.0,8.0,8.0)
+    l1p3 = Point(12.0,8.0,8.0)
+
+    l2p1 = Point(2.0,0.0,3.0)
+    l2p2 = Point(6.0,8.0,8.0)
+    l2p3 = Point(8.0,4.0,4.0)
+
+    l1 = ConvexPolygon((l1p1,l1p2,l1p3))
+    l2 = ConvexPolygon((l2p1,l2p2, l2p3))
+    poly_inter = intersection(l1,l2)
+    print(poly_inter)
+    r = Renderer()
+    r.add((l1,'r',1),normal_length = 0)
+    r.add((l2,'g',1),normal_length = 0)
+    r.add((poly_inter,'b',1),normal_length = 0)
+    r.show()
+
+def main():
+    STEP_SIZE = 0.01 #controls speed of paths
+
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.set_xlabel('X, [m]')
+    ax.set_ylabel('Y, [m]')
+    ax.set_zlabel('Z, [m]')
+    ax.set_xlim([0,12])
+    ax.set_ylim([0,12])
+    ax.set_zlim([0,12])
+
+    l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
+    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [8.0,4.0,4.0]])
+
+    plt.plot(l1[:,0], l1[:,1], l1[:,2], 'o', color='orange')
+    plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
+
+    for i in range(l1.shape[0]-1):
+        ax.plot([l1[i,0], l1[i+1,0]], [l1[i,1], l1[i+1,1]], [l1[i,2], l1[i+1,2]], color = 'orange', linewidth=1, zorder=15)
+    for i in range(l2.shape[0]-1):
+        ax.plot([l2[i,0], l2[i+1,0]], [l2[i,1], l2[i+1,1]], [l2[i,2], l2[i+1,2]], color = 'blue', linewidth=1, zorder=15)
+
+    path1 = interpolate(l1, step)
+    path2 = interpolate(l2, step)
+
+    while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE):
+
+
+    plt.show()
+
 
 if __name__ == '__main__':
     main()

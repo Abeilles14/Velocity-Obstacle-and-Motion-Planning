@@ -10,6 +10,10 @@ from RRTStar import RRTStar
 from arm import Arm
 from objects import Object
 
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.INFO)
+
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points
 # generate the coordinates on the curve by cumulative summing
