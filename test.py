@@ -231,8 +231,8 @@ def main():
 
         print("POS: {}, {}".format(path1[idx1], path2[idx2]))
         print("ARM_DIST: {}".format(arm_dist))
-        plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
-        plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
+        # plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
+        # plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
         
         if (arm_dist <= THRESHOLD_DIST).all():
             print("COLLISION IMMINENT!")
@@ -241,8 +241,8 @@ def main():
             plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
             plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
         
-        plt.pause(0.0005)
-        
+        # plt.pause(0.0005)
+
     print("INTERSECTIONS: {}".format(intersect1))
 
     plt.show()

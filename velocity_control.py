@@ -46,5 +46,36 @@ def interpolate(P, step, show_interplot=False):
 
     return path
 
-# def find_intersection(path1, path2, show_intersect=True):
+def find_intersection(path1, path2, arm1, arm2, animate=False):
+    animate = False
 
+    # check whether any pts in paths are within threshold
+    idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
+    idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
+    logging.debug("PATH RANGES: {}, {}".format(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0]))
+
+    intersect_pts1 = []
+    intersect_pts2 = []
+    for i in range(path_range-1):
+        idx1 = np.where(path1 == arm1.get_position())[0][0] + i
+        idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+        # print("IDX: {}, {}".format(idx1, idx2))
+        arm_dist = euclidean_distance(path1[idx1], path2[idx2])
+
+        logging.debug("POS: {}, {}".format(path1[idx1], path2[idx2]))
+        logging.debug("ARM_DIST: {}".format(arm_dist))
+
+        if (arm_dist <= THRESHOLD_DIST).all():
+            intersect_pts1.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
+            intersect_pts2.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
+            
+            plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
+            plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
+    
+    return (intersect_pts1, intersect_pts2)
+
+def update_velocity(path1, path2, step1, step2):
+    new_path1 = interpolate(path1, step1)
+    new_path2 = interpolate(path2, step2)
+    return new_path1, new_path2
