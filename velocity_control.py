@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.INFO)
 
+# Constants
+THRESHOLD_DIST = 2
+
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points
 # generate the coordinates on the curve by cumulative summing
@@ -50,16 +53,20 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
     animate = False
 
     # check whether any pts in paths are within threshold
-    idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
-    idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    # idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
+    # idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    idx1 = 0
+    idx2 = 0
     path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
     logging.debug("PATH RANGES: {}, {}".format(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0]))
 
     intersect_pts1 = []
     intersect_pts2 = []
     for i in range(path_range-1):
-        idx1 = np.where(path1 == arm1.get_position())[0][0] + i
-        idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+        # idx1 = np.where(path1 == arm1.get_position())[0][0] + i
+        # idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+        idx1 = i
+        idx2 = i
         # print("IDX: {}, {}".format(idx1, idx2))
         arm_dist = euclidean_distance(path1[idx1], path2[idx2])
 
@@ -73,9 +80,13 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
             plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
             plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
     
-    return (intersect_pts1, intersect_pts2)
+    return (np.array(intersect_pts1), np.array(intersect_pts2))
 
-def update_velocity(path1, path2, step1, step2):
-    new_path1 = interpolate(path1, step1)
-    new_path2 = interpolate(path2, step2)
+def update_velocity(path1, path2, vel1, vel2):
+    new_path1 = interpolate(path1, vel1)
+    new_path2 = interpolate(path2, vel2)
     return new_path1, new_path2
+
+def euclidean_distance(point1, point2):
+    distance = np.linalg.norm(point1-point2)
+    return distance

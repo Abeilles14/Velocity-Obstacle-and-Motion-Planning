@@ -58,7 +58,7 @@ class ArmStateMachine:
         self.log_verbose = log_verbose
         self.path = None
         self.compute_path = True
-        self.collision_point = None
+        self.collision_point = np.empty(3)
 
         self.state = ArmState.PLANNING
         self.destination = Goal.OBJ
@@ -87,11 +87,14 @@ class ArmStateMachine:
     ### STATE FUNCTIONS ###
     # if arm not at goal, and compute flag, plan path to next dest
     # returns to main loop after this to check for collisions and adjust path velocity
-    def _plan_path(self, dest):
+    def _plan_path(self):
         # Call RRTS algo to plan and execute path
-        if not np.isclose(self.arm.get_position(), dest, atol=ABS_TOLERANCE).all():
+        if self.log_verbose:
+            logger.debug("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
+
+        if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
-                rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), dest)
+                rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
                 sampled_path = interpolate(rrts_path, STEP_SIZE)
                 self.path = sampled_path
                 self.compute_path = False
@@ -102,7 +105,7 @@ class ArmStateMachine:
             return ArmState.APPROACH_OBJECT
         elif self.destination == Goal.BOWL:
             return ArmState.APPROACH_DEST
-        elif self.destination = Goal.HOME:
+        elif self.destination == Goal.HOME:
             return ArmState.HOME
 
     def _approach_object(self):
@@ -175,7 +178,9 @@ class ArmStateMachine:
 
     def _home_next(self):
         if np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
-        return ArmState.DONE
+            return ArmState.DONE
+        else:
+            return ArmState.HOME
 
     # def halt(self):
     #     # this sets the desired joint position to the current joint position
@@ -197,13 +202,12 @@ class ArmStateMachine:
     # set arm position and plot
     def _execute_path(self):
         logger.info("Executing Path")
-
-        self.arm.set_position(np.array([path[0,0], path[0,1], path[0,2]]))
+        self.arm.set_position(np.array([self.path[0,0], self.path[0,1], self.path[0,2]]))
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
-        self.ax.plot(path[0,0], path[0,1], path[0,2], 'o', color='orange', markersize=3)
+        self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
         
         # if at final collision point, go back into planning state to recheck collisions
-        if self.collision_point:
+        if (self.collision_point).all() != None:
             if (self.arm.get_position() == self.collision_point).all():
                 self.state = ArmState.PLANNING
         
@@ -213,9 +217,8 @@ class ArmStateMachine:
     def run_once(self):
         if self.log_verbose:
             logger.debug("Running state {}".format(self.state))
-        if self.state == ArmState.DONE
-            return
-        
+        # if self.state == ArmState.DONE:
+        #     return
         # execute the current state
         self.state_functions[self.state]()
         self.state = self.next_functions[self.state]()

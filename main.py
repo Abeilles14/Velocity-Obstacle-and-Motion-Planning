@@ -23,7 +23,7 @@ from velocity_control import find_intersection, update_velocity
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 ### CONSTANTS ###
 ARM1_HOME_POS = np.array([0.0, 0.15, 0.0])
@@ -92,7 +92,6 @@ def main():
     while (arm1_sm.state != ArmState.DONE) and (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
         arm2_sm.run_once()
-
         # check for intersection
         if (arm1_sm.state == ArmState.PLANNING) or (arm2_sm.state == ArmState.PLANNING):
             path1 = arm1_sm.get_path()
@@ -100,16 +99,21 @@ def main():
             intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
 
             # if collision detected, adjust path velocities
-            if intersect_pts1 and intersect_pts2
+            if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
+                logger.info("COLLISION DETECTED!")
+                logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
                 # temp pre-set velocities:
                 new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08)
+                # set new path and last collision point
+                logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
                 arm1_sm.set_path(new_path1, intersect_pts1[intersect_pts1.shape[0]-1])
                 arm2_sm.set_path(new_path2, intersect_pts2[intersect_pts2.shape[0]-1])
             else:
                 # reset paths velocities if no more intersections
+                logger.info("NO COLLISION DETECTED!")
                 new_path1, new_path2 = update_velocity(path1, path2, vel1=INIT_VEL, vel2=INIT_VEL)
-                arm1_sm.set_path(new_path1, None)
-                arm2_sm.set_path(new_path2, None)
+                arm1_sm.set_path(new_path1, np.empty(3))
+                arm2_sm.set_path(new_path2, np.empty(3))
         
     logger.info("Pick and Place Simulation End")
 
