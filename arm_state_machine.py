@@ -45,7 +45,7 @@ class Goal(Enum):
 
 class ArmStateMachine:
     def __init__(self, ax, obstacles, arm, obj, bowl,
-                 closed_loop=False, home_when_done=True, log_verbose=True):
+                 closed_loop=False, home_when_done=True):
         self.ax = ax
         self.obstacles = obstacles
         self.arm = arm
@@ -55,7 +55,6 @@ class ArmStateMachine:
 
         self.closed_loop = closed_loop
         self.home_when_done = home_when_done
-        self.log_verbose = log_verbose
         self.path = None
         self.compute_path = True
         self.collision_point = np.empty(3)
@@ -63,9 +62,8 @@ class ArmStateMachine:
         self.state = ArmState.PLANNING
         self.destination = Goal.OBJ
 
-        if self.log_verbose:
-            logger.debug("ArmStateMachine:__init__")
-            logger.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
+        logger.debug("ArmStateMachine:__init__")
+        logger.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
 
         self.state_functions = {
             ArmState.PLANNING: self._plan_path,
@@ -74,6 +72,7 @@ class ArmStateMachine:
             ArmState.APPROACH_DEST: self._approach_dest,
             ArmState.DROP_OBJECT: self._drop_object,
             ArmState.HOME: self._home,
+            ArmState.DONE: self._done
         }
         self.next_functions = {
             ArmState.PLANNING: self._plan_path_next,
@@ -81,7 +80,8 @@ class ArmStateMachine:
             ArmState.GRAB_OBJECT: self._grab_object_next,
             ArmState.APPROACH_DEST: self._approach_dest_next,
             ArmState.DROP_OBJECT: self._drop_object_next,
-            ArmState.HOME: self._home_next
+            ArmState.HOME: self._home_next,
+            ArmState.DONE: self._done
         }
 
     ### STATE FUNCTIONS ###
@@ -89,8 +89,7 @@ class ArmStateMachine:
     # returns to main loop after this to check for collisions and adjust path velocity
     def _plan_path(self):
         # Call RRTS algo to plan and execute path
-        if self.log_verbose:
-            logger.debug("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
+        logger.debug("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
 
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
@@ -109,8 +108,7 @@ class ArmStateMachine:
             return ArmState.HOME
 
     def _approach_object(self):
-        if self.log_verbose:
-            logger.debug("{} APPROACHING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
+        logger.debug("{} APPROACHING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
         self._execute_path()
 
     # if arm is at object, next grab object state
@@ -121,8 +119,7 @@ class ArmStateMachine:
             return ArmState.APPROACH_OBJECT
     
     def _grab_object(self):
-        if self.log_verbose:
-            logger.debug("{} GRABBING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
+        logger.debug("{} GRABBING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
 
     # set next destination and compute path flag, next planning state
     def _grab_object_next(self):
@@ -132,8 +129,7 @@ class ArmStateMachine:
         return ArmState.PLANNING
 
     def _approach_dest(self):
-        if self.log_verbose:
-            logger.debug("{} APPROACHING DEST at {}".format(self.arm.get_name(), self.arm.get_destination()))
+        logger.debug("{} APPROACHING DEST at {}".format(self.arm.get_name(), self.arm.get_destination()))
         self._execute_path()
 
     def _approach_dest_next(self):
@@ -143,8 +139,7 @@ class ArmStateMachine:
             return ArmState.APPROACH_DEST 
 
     def _drop_object(self):
-        if self.log_verbose:
-            logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
+        logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
 
     def _drop_object_next(self):
         self.destination = Goal.HOME
@@ -172,8 +167,7 @@ class ArmStateMachine:
         # return PickAndPlaceState.DROP_OBJECT
 
     def _home(self):
-        if self.log_verbose:
-            logger.debug("{} APROACHING HOME at {}".format(self.arm.get_name(), self.arm.get_home()))
+        logger.debug("{} APROACHING HOME at {}".format(self.arm.get_name(), self.arm.get_home()))
         self._execute_path()
 
     def _home_next(self):
@@ -181,6 +175,9 @@ class ArmStateMachine:
             return ArmState.DONE
         else:
             return ArmState.HOME
+
+    def _done(self):
+        return ArmState.DONE
 
     # def halt(self):
     #     # this sets the desired joint position to the current joint position
@@ -194,8 +191,7 @@ class ArmStateMachine:
     ### END STATE FUNCTIONS ###
 
     # def _set_arm_dest(self, dest):
-    #     if self.log_verbose:
-    #         logger.debug("Setting {} dest to {}".format(self.arm.get_name(), dest))
+    #     logger.debug("Setting {} dest to {}".format(self.arm.get_name(), dest))
     #     self.arm.set_destination(dest)
     #     self._execute_path(self.ax, self.path)
 
@@ -215,8 +211,7 @@ class ArmStateMachine:
         plt.pause(PAUSE_TIME)
 
     def run_once(self):
-        if self.log_verbose:
-            logger.debug("Running state {}".format(self.state))
+        logger.debug("Running state {}".format(self.state))
         # if self.state == ArmState.DONE:
         #     return
         # execute the current state

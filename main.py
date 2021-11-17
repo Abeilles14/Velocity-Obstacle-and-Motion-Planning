@@ -89,9 +89,10 @@ def main():
 
     logger.info("Pick and Place Simulation Start")
 
-    while (arm1_sm.state != ArmState.DONE) and (arm2_sm.state != ArmState.DONE): #should be HOME
+    while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
         arm2_sm.run_once()
+        
         # check for intersection
         if (arm1_sm.state == ArmState.PLANNING) or (arm2_sm.state == ArmState.PLANNING):
             path1 = arm1_sm.get_path()

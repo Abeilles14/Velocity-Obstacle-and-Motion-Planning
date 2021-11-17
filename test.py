@@ -15,8 +15,12 @@ from shapely.geometry import LineString, MultiPoint, shape
 from RRTStar import RRTStar
 from arm import Arm
 from objects import Object
-from velocity_control import interpolate
+from velocity_control import interpolate, update_velocity
 from arm import Arm
+
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
 
 def find_intersections():
     fig = plt.figure()
@@ -196,8 +200,8 @@ def main():
 
     # initialize arms
     # start at 1 pts of each lines, end at last pt of each line
-    arm1 = Arm(name="PSM1", position=l1[0], destination=l1[l1.shape[0]-1], velocity=INIT_VEL)
-    arm2 = Arm(name="PSM2", position=l2[0], destination=l2[l2.shape[0]-1], velocity=INIT_VEL)
+    arm1 = Arm(name="PSM1", position=l1[0], destination=l1[l1.shape[0]-1], velocity=INIT_VEL, home=l1[0])
+    arm2 = Arm(name="PSM2", position=l2[0], destination=l2[l2.shape[0]-1], velocity=INIT_VEL, home=l2[0])
 
     plt.plot(l1[:,0], l1[:,1], l1[:,2], 'o', color='orange')
     plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
@@ -240,16 +244,58 @@ def main():
             intersect2.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
             plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
             plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
-        
+
         # plt.pause(0.0005)
+    
+    # now that we have the intersection zones in both paths, adjust speed and animate  
+    intersect_pts1, intersect_pts2 = np.array(intersect1), np.array(intersect2)
+    new_path1, new_path2 = avoid_collision(intersect_pts1, intersect_pts2, path1, path2, arm1, arm2)
+    run_path(new_path1, new_path2, arm1, arm2)
 
     print("INTERSECTIONS: {}".format(intersect1))
-
-    plt.show()
+    # plt.show()
 
 def euclidean_distance(point1, point2):
     distance = np.linalg.norm(point1-point2)
     return distance
+
+def avoid_collision(intersect_pts1, intersect_pts2, path1, path2, arm1, arm2):
+    # if collision detected, adjust path velocities
+    if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
+        logger.info("COLLISION DETECTED!")
+        logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
+         # temp pre-set velocities:
+        new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08)
+        # set new path and last collision point
+        logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
+    else:
+        # reset paths velocities if no more intersections
+        logger.info("NO COLLISION DETECTED!")
+        new_path1, new_path2 = update_velocity(path1, path2, vel1=INIT_VEL, vel2=INIT_VEL)
+        arm1_sm.set_path(new_path1, np.empty(3))
+        arm2_sm.set_path(new_path2, np.empty(3))
+
+    return new_path1, new_path2
+
+def run_path(path1, path2, arm1, arm2):
+    # check whether any pts in paths are within threshold
+    idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
+    idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
+    # print("PATH RANGES: {}, {}".format(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0]))
+
+    intersect1 = []
+    intersect2 = []
+    for i in range(path_range-1):
+        idx1 = np.where(path1 == arm1.get_position())[0][0] + i
+        idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+
+        plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
+        plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
+        
+        plt.pause(0.0005)
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
