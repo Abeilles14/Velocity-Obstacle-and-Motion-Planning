@@ -26,15 +26,15 @@ logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
 ### CONSTANTS ###
-ARM1_HOME_POS = np.array([0.0, 0.15, 0.0])
-ARM2_HOME_POS = np.array([0.0, -0.15, 0.0])
+ARM1_HOME_POS = np.array([0.0, 0.2, 0.0])
+ARM2_HOME_POS = np.array([0.0, -0.2, 0.0])
 OBJ1 = np.array([0.0, 1.0, 2.5])
 OBJ2 = np.array([0.0, -1.0, 2.5])
 # OBJ2 = np.array([-0.5, -1.0, 2.5])
 BOWL =  np.array([2, 0.0, 1.0])
 INIT_VEL = 0.05
 ABS_TOLERANCE = 0.055
-THRESHOLD_DIST = 2
+THRESHOLD_DIST = 0.5
 
 ### PARAMETERS ###
 show_RRT = False
@@ -88,8 +88,6 @@ def main():
     arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
     arm2_sm = ArmStateMachine(ax, obstacles, arm2, obj2, BOWL)
 
-    # RRTStar(ax, obstacles, ARM1_HOME_POS, OBJ1)
-
     logger.info("Pick and Place Simulation Start")
 
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
@@ -98,15 +96,15 @@ def main():
 
         # check for intersection
         #TODO: debug collision avoidance
-        if (arm1_sm.state == ArmState.PLANNING) or (arm2_sm.state == ArmState.PLANNING):
+        # if (arm1_sm.state == ArmState.PLANNING) or (arm2_sm.state == ArmState.PLANNING):
+        if arm1_sm.check_collisions or arm2_sm.check_collisions:
             logger.info("Checking Collisions...")
             path1 = arm1_sm.get_path()
             path2 = arm2_sm.get_path()
 
-            # check if common goal
+            # check if common goal - should still be detected by intersection points though??
             if euclidean_distance(path1[path1.shape[0]-1], path2[path2.shape[0]-1]) <= THRESHOLD_DIST:
                 logger.info("COLLISION DETECTED @ COMMON GOAL")
-
 
             intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
 

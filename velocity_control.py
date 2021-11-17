@@ -15,7 +15,7 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 # Constants
-THRESHOLD_DIST = 2
+THRESHOLD_DIST = 0.5
 
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points

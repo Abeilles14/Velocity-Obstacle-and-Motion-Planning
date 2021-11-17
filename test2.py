@@ -198,7 +198,7 @@ def main():
     # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
     # l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,2.0,2.0]])
     l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
-    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,2.0,2.0]])
+    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,8.0,8.0]])
 
     # initialize arms
     # start at 1 pts of each lines, end at last pt of each line
@@ -219,7 +219,7 @@ def main():
 
 
     arm1.set_position(path1[0])    # start at pt. 0 of path1
-    arm2.set_position(path2[50])    # start at pt. 60 of path2
+    arm2.set_position(path2[0])    # start at pt. 60 of path2
 
     # check whether any pts in paths are within threshold
     # get start index for path change (current arm pos)
