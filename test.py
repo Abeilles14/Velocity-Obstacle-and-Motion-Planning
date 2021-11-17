@@ -179,10 +179,10 @@ def geometry3D_test():
     r.add((poly_inter,'b',1),normal_length = 0)
     r.show()
 
+STEP_SIZE = 0.08 #controls speed of paths
+THRESHOLD_DIST = 1
+
 def main():
-    STEP_SIZE = 0.05 #controls speed of paths
-    THRESHOLD_DIST = 2
-    INIT_VEL = 0.05
 
     animate = False
 
@@ -196,12 +196,12 @@ def main():
     ax.set_zlim([0,12])
 
     l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
-    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [8.0,4.0,4.0]])
+    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,2.0,2.0]])
 
     # initialize arms
     # start at 1 pts of each lines, end at last pt of each line
-    arm1 = Arm(name="PSM1", position=l1[0], destination=l1[l1.shape[0]-1], velocity=INIT_VEL, home=l1[0])
-    arm2 = Arm(name="PSM2", position=l2[0], destination=l2[l2.shape[0]-1], velocity=INIT_VEL, home=l2[0])
+    arm1 = Arm(name="PSM1", position=l1[0], destination=l1[l1.shape[0]-1], velocity=STEP_SIZE, home=l1[0])
+    arm2 = Arm(name="PSM2", position=l2[0], destination=l2[l2.shape[0]-1], velocity=STEP_SIZE, home=l2[0])
 
     plt.plot(l1[:,0], l1[:,1], l1[:,2], 'o', color='orange')
     plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
@@ -216,10 +216,11 @@ def main():
         ax.plot([l2[i,0], l2[i+1,0]], [l2[i,1], l2[i+1,1]], [l2[i,2], l2[i+1,2]], color = 'blue', linewidth=1, zorder=15)
 
 
-    arm1.set_position(path1[0])    # start at pt. 30 of path1
-    arm2.set_position(path2[70])    # start at pt. 10 of path2
+    arm1.set_position(path1[0])    # start at pt. 0 of path1
+    arm2.set_position(path2[50])    # start at pt. 60 of path2
 
     # check whether any pts in paths are within threshold
+    # get start index for path change (current arm pos)
     idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
     idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
     path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
@@ -260,39 +261,53 @@ def euclidean_distance(point1, point2):
     return distance
 
 def avoid_collision(intersect_pts1, intersect_pts2, path1, path2, arm1, arm2):
+    # get start index for path change (current arm pos)
+    idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
+    idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+
     # if collision detected, adjust path velocities
     if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
         logger.info("COLLISION DETECTED!")
         logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
-         # temp pre-set velocities:
-        new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08)
+        # temp pre-set velocities:
+        # NOTE: start point of new paths is arm current location!! need to iter from 0 when plotting
+        new_path1, new_path2 = update_velocity(path1[idx1:,:], path2[idx2:,:], vel1=0.07, vel2=0.09)
         # set new path and last collision point
         logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
     else:
         # reset paths velocities if no more intersections
         logger.info("NO COLLISION DETECTED!")
-        new_path1, new_path2 = update_velocity(path1, path2, vel1=INIT_VEL, vel2=INIT_VEL)
-        arm1_sm.set_path(new_path1, np.empty(3))
-        arm2_sm.set_path(new_path2, np.empty(3))
+        new_path1, new_path2 = update_velocity(path1[idx1:,:], path2[idx2:,:], vel1=STEP_SIZE, vel2=STEP_SIZE)
+        # arm1_sm.set_path(new_path1, np.empty(3))
+        # arm2_sm.set_path(new_path2, np.empty(3))
 
     return new_path1, new_path2
 
 def run_path(path1, path2, arm1, arm2):
     # check whether any pts in paths are within threshold
-    idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
-    idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
-    path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
+    # idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
+    # idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    
+    idx1 = 0
+    idx2 = 0
+    # path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
     # print("PATH RANGES: {}, {}".format(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0]))
 
     intersect1 = []
     intersect2 = []
-    for i in range(path_range-1):
-        idx1 = np.where(path1 == arm1.get_position())[0][0] + i
-        idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+    i = 0
+    while(idx1 != path1[idx1:,:].shape[0] or idx2 != path2[idx2:,:].shape[0]):
+        # idx1 = np.where(path1 == arm1.get_position())[0][0] + i
+        # idx2 = np.where(path2 == arm2.get_position())[0][0] + i
+        idx1 = i
+        idx2 = i
 
-        plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
-        plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
-        
+        if idx1 < path1.shape[0]:
+            plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
+        if idx2 < path2.shape[0]:
+            plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
+            
+        i += 1
         plt.pause(0.0005)
 
     plt.show()
