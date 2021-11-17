@@ -55,6 +55,7 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
     # check whether any pts in paths are within threshold
     # idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
     # idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
+    #TODO: debug here, path1[0] != arm pos??
     idx1 = 0
     idx2 = 0
     path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths

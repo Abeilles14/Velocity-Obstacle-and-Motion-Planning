@@ -21,13 +21,14 @@ from velocity_control import interpolate
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ### CONSTANTS ###
 ARM_HOME_POS = [0.0, 0.0, 0.0]
 PAUSE_TIME = 0.0005
 ABS_TOLERANCE = 0.055
 STEP_SIZE = 0.05 #controls speed of paths
+
 
 class ArmState(Enum):
     PLANNING = 0,
@@ -190,14 +191,9 @@ class ArmStateMachine:
     #         return self.state == ArmState.DONE
     ### END STATE FUNCTIONS ###
 
-    # def _set_arm_dest(self, dest):
-    #     logger.debug("Setting {} dest to {}".format(self.arm.get_name(), dest))
-    #     self.arm.set_destination(dest)
-    #     self._execute_path(self.ax, self.path)
-
     # set arm position and plot
     def _execute_path(self):
-        logger.info("Executing Path")
+        logger.debug("Executing Path")
         self.arm.set_position(np.array([self.path[0,0], self.path[0,1], self.path[0,2]]))
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
         self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)

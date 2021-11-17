@@ -19,7 +19,7 @@ from objects import Object
 from arm import Arm
 from RRTStar import RRTStar
 from arm_state_machine import ArmStateMachine, ArmState
-from velocity_control import find_intersection, update_velocity
+from velocity_control import find_intersection, update_velocity, euclidean_distance
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -29,9 +29,12 @@ logger.setLevel(logging.DEBUG)
 ARM1_HOME_POS = np.array([0.0, 0.15, 0.0])
 ARM2_HOME_POS = np.array([0.0, -0.15, 0.0])
 OBJ1 = np.array([0.0, 1.0, 2.5])
-OBJ2 = np.array([-0.5, -1.0, 2.5])
+OBJ2 = np.array([0.0, -1.0, 2.5])
+# OBJ2 = np.array([-0.5, -1.0, 2.5])
 BOWL =  np.array([2, 0.0, 1.0])
 INIT_VEL = 0.05
+ABS_TOLERANCE = 0.055
+THRESHOLD_DIST = 2
 
 ### PARAMETERS ###
 show_RRT = False
@@ -92,11 +95,19 @@ def main():
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
         arm2_sm.run_once()
-        
+
         # check for intersection
+        #TODO: debug collision avoidance
         if (arm1_sm.state == ArmState.PLANNING) or (arm2_sm.state == ArmState.PLANNING):
+            logger.info("Checking Collisions...")
             path1 = arm1_sm.get_path()
             path2 = arm2_sm.get_path()
+
+            # check if common goal
+            if euclidean_distance(path1[path1.shape[0]-1], path2[path2.shape[0]-1]) <= THRESHOLD_DIST:
+                logger.info("COLLISION DETECTED @ COMMON GOAL")
+
+
             intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
 
             # if collision detected, adjust path velocities
