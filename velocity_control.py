@@ -27,12 +27,12 @@ def interpolate(P, step, show_interplot=False):
     yd = np.diff(y)
     zd = np.diff(z)
     dist = np.sqrt(xd**2 + yd**2 + zd**2)
-    u = np.cumsum(dist)
-    u = np.hstack([[0], u])
+    _u = np.cumsum(dist)
+    u = np.hstack([[0], _u])
 
     # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
     t = np.arange(0, u.max()+step, step)
-    xn = np.interp(t, u, x)
+    xn = np.interp(t, u, x)     # TODO: make sure fp and xp len matches
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
 
@@ -55,7 +55,6 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
     # check whether any pts in paths are within threshold
     # idx1 = np.where(path1 == arm1.get_position())[0][0]     # get start index
     # idx2 = np.where(path2 == arm2.get_position())[0][0]     # get start index
-    #TODO: debug here, path1[0] != arm pos??
     idx1 = 0
     idx2 = 0
     path_range = min(path1[idx1:,:].shape[0], path2[idx2:,:].shape[0])    # get minimum of both remaining paths
@@ -76,7 +75,7 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
 
         if (arm_dist <= THRESHOLD_DIST).all():
             intersect_pts1.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
-            intersect_pts2.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
+            intersect_pts2.append([path2[idx2,0], path2[idx2,1], path2[idx2,2]])
             
             plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
             plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
@@ -107,7 +106,6 @@ def update_velocity(path1, path2, vel1, vel2, idx=None):
         # concat new vel path to collision and post-collision init vel path
         # this new path has adjusted vel until last collision point, then back to regular vel
         new_path2 = np.concatenate((new_path2_to_col, np.delete(path2, np.arange(0, idx), axis=0)), axis=0)
-
         new_path1 = np.concatenate((new_path1_to_col, np.delete(path1, np.arange(0,path_reset_idx-1), axis=0)), axis=0)
 
     return new_path1, new_path2

@@ -26,15 +26,15 @@ logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
 ### CONSTANTS ###
-ARM1_HOME_POS = np.array([0.0, 0.2, 0.0])
-ARM2_HOME_POS = np.array([0.0, -0.2, 0.0])
+ARM1_HOME_POS = np.array([0.0, 1.0, 0.0])
+ARM2_HOME_POS = np.array([0.0, -1.0, 0.0])
 OBJ2 = np.array([0.0, 1.0, 2.5])
 # OBJ2 = np.array([0.0, -1.0, 2.5])
 OBJ1 = np.array([-0.5, -1.0, 2.5])
 BOWL =  np.array([2, 0.0, 1.0])
-INIT_VEL = 0.08#0.05
+INIT_VEL = 0.05
 ABS_TOLERANCE = 0.055
-THRESHOLD_DIST = 0.1
+THRESHOLD_DIST = 0.05
 
 ### PARAMETERS ###
 show_RRT = False
@@ -102,7 +102,7 @@ def main():
             path2 = arm2_sm.get_path()
 
             # check if common goal - should still be detected by intersection points though??
-            if euclidean_distance(path1[path1.shape[0]-1], path2[path2.shape[0]-1]) <= THRESHOLD_DIST:
+            if euclidean_distance(path1[-1,:], path2[-1,:]) <= THRESHOLD_DIST:
                 logger.info("COLLISION DETECTED @ COMMON GOAL")
                 # TODO: do something?
                 # set collision point?
@@ -112,16 +112,17 @@ def main():
             # if collision detected, adjust path velocities
             if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
                 logger.info("COLLISION DETECTED!")
-                logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
+                logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts2, intersect_pts2.shape[0]))
                 
                 # set collision point as the last collision point in intersection pts
-                # TODO: once 1st arm reaches this point, need to go to state PLANNING to recheck cols
-                arm2_sm.collision_point = intersect_pts2[intersect_pts2.shape[0]-1]
+                # TODO: once 1st arm reaches this point, check that arm goes to state PLANNING to recheck cols
+                arm2_sm.collision_point = intersect_pts2[-1,:]
 
-                print(path2)
                 # TODO: set arm nearest goal to inc in speed
                 # update current path ONLY to last collision point, keep initial path post collision pt
+                print(path2)
                 path2_col_idx = np.where(path2 == arm2_sm.collision_point)[0][0]
+                print(path2_col_idx)
                 # NOTE: temp pre-set velocities:
                 new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08, idx=path2_col_idx)
                 
