@@ -90,13 +90,12 @@ def main():
 
     logger.info("Pick and Place Simulation Start")
 
+    #### MAIN LOOP ####
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
         arm2_sm.run_once()
 
         # check for intersection
-        #TODO: debug collision avoidance
-        # if (arm1_sm.state == ArmState.PLANNING) or (arm2_sm.state == ArmState.PLANNING):
         if arm1_sm.check_collisions or arm2_sm.check_collisions:
             logger.info("Checking Collisions...")
             path1 = arm1_sm.get_path()
@@ -105,6 +104,8 @@ def main():
             # check if common goal - should still be detected by intersection points though??
             if euclidean_distance(path1[path1.shape[0]-1], path2[path2.shape[0]-1]) <= THRESHOLD_DIST:
                 logger.info("COLLISION DETECTED @ COMMON GOAL")
+                # TODO: do something?
+                # set collision point?
 
             intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
 
@@ -112,15 +113,34 @@ def main():
             if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
                 logger.info("COLLISION DETECTED!")
                 logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
+                
                 # temp pre-set velocities:
-                new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08)
+                # TODO: set arm nearest goal to inc in speed
+                # TODO: update only current path to last collision point
+                last_col_idx1 = intersect_pts1.shape[0]-1
+                last_col_idx2 = intersect_pts2.shape[0]-1
+                new_path_to_col1, new_path_to_col2 = update_velocity(path1[:last_col_idx1,:], path2[:last_col_idx2,:], vel1=0.03, vel2=0.08)
+                
+                # concat new velocity path to collision point and post collision point init velocity path
+                # this new path has adjusted vel until last collision point, then back to regular vel
+                new_path1 = np.concatenate((new_path_to_col1, np.delete(path1, np.arange(0,last_col_idx1), axis=0)), axis=0)
+                new_path2 = np.concatenate((new_path_to_col2, np.delete(path2, np.arange(0,last_col_idx2), axis=0)), axis=0)
+
+                # new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08)
+                logger.info("vel1: {}, vel2: {}".format(0.03, 0.08))
+
+                # set collision point as the last collision point in intersection pts
+                # TODO: once 1st arm reaches this point, path velocity for both arms are reset
+                arm2_sm.collision_point = intersect_pts2[intersect_pts2.shape[0]-1]
+
                 # set new path and last collision point
-                logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
                 arm1_sm.set_path(new_path1, intersect_pts1[intersect_pts1.shape[0]-1])
                 arm2_sm.set_path(new_path2, intersect_pts2[intersect_pts2.shape[0]-1])
+                logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
             else:
                 # reset paths velocities if no more intersections
                 logger.info("NO COLLISION DETECTED!")
+                logger.info("vel1: {}, vel2: {}".format(INIT_VEL, INIT_VEL))
                 new_path1, new_path2 = update_velocity(path1, path2, vel1=INIT_VEL, vel2=INIT_VEL)
                 arm1_sm.set_path(new_path1, np.empty(3))
                 arm2_sm.set_path(new_path2, np.empty(3))

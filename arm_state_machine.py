@@ -24,7 +24,6 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 ### CONSTANTS ###
-ARM_HOME_POS = [0.0, 0.0, 0.0]
 PAUSE_TIME = 0.0005
 ABS_TOLERANCE = 0.055
 STEP_SIZE = 0.05 #controls speed of paths
@@ -56,12 +55,13 @@ class ArmStateMachine:
 
         self.closed_loop = closed_loop
         self.home_when_done = home_when_done
-        self.path = None
+        self.path = []
         self.compute_path = True
         self.collision_point = np.empty(3)
 
         self.state = ArmState.PLANNING
         self.destination = Goal.OBJ
+        self.check_collisions = True
 
         logger.debug("ArmStateMachine:__init__")
         logger.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
@@ -90,14 +90,13 @@ class ArmStateMachine:
     # returns to main loop after this to check for collisions and adjust path velocity
     def _plan_path(self):
         # Call RRTS algo to plan and execute path
-        logger.debug("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
-
+        logger.info("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
                 rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
                 sampled_path = interpolate(rrts_path, STEP_SIZE)
                 self.path = sampled_path
-                self.compute_path = False
+                self.compute_path = False   # don't compute path again until destination
 
     # next state depending on set goal
     def _plan_path_next(self):
@@ -193,26 +192,35 @@ class ArmStateMachine:
 
     # set arm position and plot
     def _execute_path(self):
-        logger.debug("Executing Path")
         self.arm.set_position(np.array([self.path[0,0], self.path[0,1], self.path[0,2]]))
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
+
         self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
-        
-        # if at final collision point, go back into planning state to recheck collisions
-        if (self.collision_point).all() != None:
-            if (self.arm.get_position() == self.collision_point).all():
-                self.state = ArmState.PLANNING
-        
-        self.path = np.delete(self.path, 0, axis=0)
+        self.path = np.delete(self.path, 0, axis=0)     # delete current point from path
         plt.pause(PAUSE_TIME)
 
     def run_once(self):
         logger.debug("Running state {}".format(self.state))
-        # if self.state == ArmState.DONE:
-        #     return
+
+        # decide whether to check collisions in main after executing current state
+        if self.state == ArmState.PLANNING:
+            self.check_collisions = True
+        else:
+            self.check_collisions = False
+
         # execute the current state
         self.state_functions[self.state]()
         self.state = self.next_functions[self.state]()
+
+        # if at final collision point, go back into planning state to recheck collisions
+        if (self.collision_point != np.empty(3)).all:
+            print("collision point: {}".format(self.collision_point))
+            print("Arm pos: {}".format(self.arm.get_position()))
+            if (self.arm.get_position() == self.collision_point).all():
+                print("Arm @ {} reached collision pt @ {}".format(self.arm.get_position(),self.collision_point))
+                self.collision_point = np.empty(3)  # reset collision point when reached
+                self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
+                self.check_collisions = True
 
     def get_path(self):
         return self.path

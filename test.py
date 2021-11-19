@@ -269,8 +269,9 @@ def avoid_collision(intersect_pts1, intersect_pts2, path1, path2, arm1, arm2):
     if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
         logger.info("COLLISION DETECTED!")
         logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
+        
         # temp pre-set velocities:
-        # NOTE: start point of new paths is arm current location!! need to iter from 0 when plotting
+        # start point of new paths is arm current location!! need to iter from 0 when plotting
         new_path1, new_path2 = update_velocity(path1[idx1:,:], path2[idx2:,:], vel1=0.07, vel2=0.09)
         # set new path and last collision point
         logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
