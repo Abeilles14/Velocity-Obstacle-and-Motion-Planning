@@ -83,16 +83,32 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
     
     return (np.array(intersect_pts1), np.array(intersect_pts2))
 
+# path 1 init vel is 0.08, path2 init vel is 0.08
 def update_velocity(path1, path2, vel1, vel2, idx=None):
     # NOTE: currently arm2 speeds up, arm 1 only resumes init vel once arm2 reaches last col pt
-    # no collision
     if idx == None:
         new_path1 = interpolate(path1, vel1)
         new_path2 = interpolate(path2, vel2)
     else:
-        # collsion, want path1 to have same length as path 2 to resume init vel at same time
-        new_path2 = interpolate(path2[:idx,:], vel2)
-        new_path1 = interpolate(path1[:new_path2.shape[0]-1,:], vel1)
+        new_path2_to_col = interpolate(path2[:idx,:], vel2)    # interpolate until collision pt
+        
+        # want path1 to have same length as path 2 to resume init vel at same time
+        # first interpolate pts until last collision point
+        # then only count N pts from that path, where N is new_path2's shape
+        new_path1_to_col = interpolate(path1[:idx,:], vel1)[:new_path2_to_col.shape[0]-1,:]
+    
+        # find where to reset slow path to normal velocity
+        fast_path_idx = new_path2_to_col.shape[0]
+        init_path_idx = (fast_path_idx*vel2)/0.08
+        slow_path_idx = (fast_path_idx*vel2)/vel1
+
+        path_reset_idx = round((init_path_idx/slow_path_idx)*fast_path_idx)
+        print("RESET SLOW: {}".format(path_reset_idx))
+        # concat new vel path to collision and post-collision init vel path
+        # this new path has adjusted vel until last collision point, then back to regular vel
+        new_path2 = np.concatenate((new_path2_to_col, np.delete(path2, np.arange(0, idx), axis=0)), axis=0)
+
+        new_path1 = np.concatenate((new_path1_to_col, np.delete(path1, np.arange(0,path_reset_idx-1), axis=0)), axis=0)
 
     return new_path1, new_path2
 
