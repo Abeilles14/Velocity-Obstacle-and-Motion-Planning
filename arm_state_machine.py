@@ -214,10 +214,7 @@ class ArmStateMachine:
 
         # if at final collision point, go back into planning state to recheck collisions
         if (self.collision_point != np.empty(3)).all:
-            print("collision point: {}".format(self.collision_point))
-            print("Arm pos: {}".format(self.arm.get_position()))
             if (self.arm.get_position() == self.collision_point).all():
-                print("Arm @ {} reached collision pt @ {}".format(self.arm.get_position(),self.collision_point))
                 self.collision_point = np.empty(3)  # reset collision point when reached
                 self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
                 self.check_collisions = True

@@ -83,9 +83,17 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
     
     return (np.array(intersect_pts1), np.array(intersect_pts2))
 
-def update_velocity(path1, path2, vel1, vel2):
-    new_path1 = interpolate(path1, vel1)
-    new_path2 = interpolate(path2, vel2)
+def update_velocity(path1, path2, vel1, vel2, idx=None):
+    # NOTE: currently arm2 speeds up, arm 1 only resumes init vel once arm2 reaches last col pt
+    # no collision
+    if idx == None:
+        new_path1 = interpolate(path1, vel1)
+        new_path2 = interpolate(path2, vel2)
+    else:
+        # collsion, want path1 to have same length as path 2 to resume init vel at same time
+        new_path2 = interpolate(path2[:idx,:], vel2)
+        new_path1 = interpolate(path1[:new_path2.shape[0]-1,:], vel1)
+
     return new_path1, new_path2
 
 def euclidean_distance(point1, point2):
