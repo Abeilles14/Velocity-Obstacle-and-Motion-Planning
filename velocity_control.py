@@ -9,6 +9,7 @@ import logging
 from RRTStar import RRTStar
 from arm import Arm
 from objects import Object
+from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -83,16 +84,26 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
     return (np.array(intersect_pts1), np.array(intersect_pts2))
 
 # path 1 init vel is 0.08, path2 init vel is 0.08
+
 def update_velocity(path1, path2, vel1, vel2, idx=None):
-    # NOTE: currently arm2 speeds up, arm 1 only resumes init vel once arm2 reaches last col pt
-    if idx == None:
+    """ Update velocity of both arm paths.
+
+    Keyword Arguments:
+    path1 -- arm 1 path
+    path2 -- arm 2 path
+    vel 1 -- arm 1 wanted vel
+    vel 2 -- arm 2 wanted vel
+    idx -- index at which we want vel to reset to init
+    """
+
+    if idx == None:     # no collision
         new_path1 = interpolate(path1, vel1)
         new_path2 = interpolate(path2, vel2)
     else:
         new_path2_to_col = interpolate(path2[:idx,:], vel2)    # interpolate until collision pt
         
         # want path1 to have same length as path 2 to resume init vel at same time
-        # first interpolate pts until last collision point
+        # first interpolate pts until  collision point
         # then only count N pts from that path, where N is new_path2's shape
         new_path1_to_col = interpolate(path1[:idx,:], vel1)[:new_path2_to_col.shape[0]-1,:]
     
