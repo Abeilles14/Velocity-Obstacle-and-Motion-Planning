@@ -1,13 +1,14 @@
 # PROGRAM CONSTANTS AND PARAMETERS
 from enum import Enum
 
+# clearly i didn't spend much time thinking about how to structure this program
 
 ##################
 # CONSTANTS
 ##################
 
 # at which collision point do we want to reset the speed?
-class ResetVelPoint(Enum):
+class ResetPoint(Enum):
     FIRST_POINT = 1
     LAST_POINT = 2
 
@@ -26,8 +27,8 @@ class CollisionUpdateVel(Enum):
 # PROGRAM PARAMS
 ####################
 
-RESET_VELOCITY_AT = 2
-SPEED_UP_ARM = 1
-UPDATE_VEL_AT = 1
+RESET_VELOCITY_AT = ResetPoint.FIRST_POINT
+SPEED_UP_ARM = SpeedUpArm.NEAREST_TO_GOAL
+UPDATE_VEL = CollisionUpdateVel.START
 
-N_POINTS = 10   # threshold * pt dist?
+N_POINTS = 10   # threshold * pt dist? (for UPDATE_VEL_AT)

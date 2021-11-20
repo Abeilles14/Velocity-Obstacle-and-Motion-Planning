@@ -11,7 +11,6 @@ from scipy.spatial import ConvexHull
 from matplotlib import path
 from mpl_toolkits import mplot3d
 from enum import Enum
-from constants import RESET_VELOCITY_AT, UPDATE_VEL_AT, ResetVelPoint
 
 from utils import init_fonts
 from path_shortening import shorten_path
@@ -21,6 +20,7 @@ from arm import Arm
 from RRTStar import RRTStar
 from arm_state_machine import ArmStateMachine, ArmState
 from velocity_control import find_intersection, update_velocity, euclidean_distance
+from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -117,14 +117,15 @@ def main():
                 
                 # set collision point as the last collision point in intersection pts
                 # TODO: once 1st arm reaches this point, check that arm goes to state PLANNING to recheck cols
-                if RESET_VELOCITY_AT == ResetVelPoint.LAST_POINT:
+                if RESET_VELOCITY_AT == ResetPoint.LAST_POINT:
                     arm2_sm.collision_point = intersect_pts2[-1,:]
-                elif RESET_VELOCITY_AT == ResetVelPoint.FIRST_POINT:
-                     arm2_sm.collision_point = intersect_pts2[0,:]
+                elif RESET_VELOCITY_AT == ResetPoint.FIRST_POINT:
+                    arm2_sm.collision_point = intersect_pts2[0,:]
 
                 # TODO: set arm nearest goal to inc in speed
                 # update current path ONLY to first OR last collision point, keep initial path post collision pt
                 print(path2)
+                print(arm2_sm.collision_point)
                 path2_col_idx = np.where(path2 == arm2_sm.collision_point)[0][0]
 
                 # NOTE: temp pre-set velocities:
