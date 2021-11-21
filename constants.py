@@ -1,4 +1,5 @@
 # PROGRAM CONSTANTS AND PARAMETERS
+import numpy as np
 from enum import Enum
 
 # clearly i didn't spend much time thinking about how to structure this program
@@ -21,6 +22,19 @@ class SpeedUpArm(Enum):
 class CollisionUpdateVel(Enum):
     START = 1
     N_POINTS_BEFORE = 2
+
+ARM1_HOME_POS = np.array([0.0, 1.0, 0.0])
+ARM2_HOME_POS = np.array([0.0, -1.0, 0.0])
+
+OBJ2 = np.array([0.0, 1.0, 2.5])
+OBJ1 = np.array([-0.5, -1.0, 2.5])
+BOWL =  np.array([2, 0.0, 1.0])
+
+INIT_VEL = 0.05
+ABS_TOLERANCE = 0.055
+THRESHOLD_DIST = 0.5
+
+PAUSE_TIME = 0.0005
 
 
 ####################

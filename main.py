@@ -26,17 +26,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
-### CONSTANTS ###
-ARM1_HOME_POS = np.array([0.0, 1.0, 0.0])
-ARM2_HOME_POS = np.array([0.0, -1.0, 0.0])
-OBJ2 = np.array([0.0, 1.0, 2.5])
-# OBJ2 = np.array([0.0, -1.0, 2.5])
-OBJ1 = np.array([-0.5, -1.0, 2.5])
-BOWL =  np.array([2, 0.0, 1.0])
-INIT_VEL = 0.05
-ABS_TOLERANCE = 0.055
-THRESHOLD_DIST = 0.05
-
 ### PARAMETERS ###
 show_RRT = False
 
@@ -102,9 +91,9 @@ def main():
             path1 = arm1_sm.get_path()
             path2 = arm2_sm.get_path()
 
-            # check if common goal - should still be detected by intersection points though??
+            # check if common goal
             if euclidean_distance(path1[-1,:], path2[-1,:]) <= THRESHOLD_DIST:
-                logger.info("COLLISION DETECTED @ COMMON GOAL")
+                logger.info("ARMS MOVING TOWARD COMMON GOAL")
                 # TODO: do something?
                 # set collision point?
 
@@ -115,23 +104,28 @@ def main():
                 logger.info("COLLISION DETECTED!")
                 logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts2, intersect_pts2.shape[0]))
                 
-                # set collision point as the last collision point in intersection pts
-                # TODO: once 1st arm reaches this point, check that arm goes to state PLANNING to recheck cols
+                # choose whether to speed up arm nearest or furthest to goal
+                if SPEED_UP_ARM == SpeedUpArm.NEAREST_TO_GOAL:
+                    intersection = intersect_pts1 if path1.shape[0] < path2.shape[0] else intersect_pts2
+                elif SPEED_UP_ARM == SpeedUpArm.FURTHEST_FROM_GOAL:
+                    intersection = intersect_pts1 if path1.shape[0] > path2.shape[0] else intersect_pts2
+
+                # set collision point as first or last collision point in intersection pts
+                #TODO: fix depending on arm speedup??? don't want to access collision_point directly
                 if RESET_VELOCITY_AT == ResetPoint.LAST_POINT:
-                    arm2_sm.collision_point = intersect_pts2[-1,:]
+                    arm2_sm.collision_point = intersection[-1,:]
                 elif RESET_VELOCITY_AT == ResetPoint.FIRST_POINT:
-                    arm2_sm.collision_point = intersect_pts2[0,:]
+                    arm2_sm.collision_point = intersection[0,:]
 
                 # TODO: set arm nearest goal to inc in speed
                 # update current path ONLY to first OR last collision point, keep initial path post collision pt
-                print(path2)
-                print(arm2_sm.collision_point)
                 path2_col_idx = np.where(path2 == arm2_sm.collision_point)[0][0]
 
                 # NOTE: temp pre-set velocities:
                 new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08, idx=path2_col_idx)
                 
-                # set new path and last collision point
+                # set new path and collision point
+                #TODO fix collision point?
                 arm1_sm.set_path(new_path1, intersect_pts1[intersect_pts1.shape[0]-1])
                 arm2_sm.set_path(new_path2, intersect_pts2[intersect_pts2.shape[0]-1])
                 logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")

@@ -18,16 +18,11 @@ from obstacles import Parallelepiped
 from arm import Arm
 from objects import Object
 from velocity_control import interpolate
+from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.INFO)
-
-### CONSTANTS ###
-PAUSE_TIME = 0.0005
-ABS_TOLERANCE = 0.055
-STEP_SIZE = 0.05 #controls speed of paths
-
 
 class ArmState(Enum):
     PLANNING = 0,
@@ -94,7 +89,7 @@ class ArmStateMachine:
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
                 rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
-                sampled_path = interpolate(rrts_path, STEP_SIZE)
+                sampled_path = interpolate(rrts_path, INIT_VEL)
                 self.path = sampled_path
                 self.compute_path = False   # don't compute path again until destination
 
@@ -215,6 +210,7 @@ class ArmStateMachine:
         # if at final collision point, go back into planning state to recheck collisions
         if (self.collision_point != np.empty(3)).all:
             if (self.arm.get_position() == self.collision_point).all():
+                logger.info("Collision Pt reached - Resetting Vel & Check Collisions...")
                 self.collision_point = np.empty(3)  # reset collision point when reached
                 self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
                 self.check_collisions = True
