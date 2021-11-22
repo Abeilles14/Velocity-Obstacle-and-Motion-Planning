@@ -1,23 +1,12 @@
 # 3D PICK AND PLACE SIMULATION
 import numpy as np
-import time
 import logging
-from numpy.linalg import norm
 from math import *
 from matplotlib import pyplot as plt
-from matplotlib.patches import Polygon
-from random import random
-from scipy.spatial import ConvexHull
-from matplotlib import path
-from mpl_toolkits import mplot3d
-from enum import Enum
-
 from utils import init_fonts
-from path_shortening import shorten_path
 from obstacles import Parallelepiped
 from objects import Object
 from arm import Arm
-from RRTStar import RRTStar
 from arm_state_machine import ArmStateMachine, ArmState
 from velocity_control import find_intersection, update_velocity, euclidean_distance
 from constants import *
@@ -105,10 +94,11 @@ def main():
                 logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts2, intersect_pts2.shape[0]))
                 
                 # choose whether to speed up arm nearest or furthest to goal
-                if SPEED_UP_ARM == SpeedUpArm.NEAREST_TO_GOAL:
-                    intersection = intersect_pts1 if path1.shape[0] < path2.shape[0] else intersect_pts2
-                elif SPEED_UP_ARM == SpeedUpArm.FURTHEST_FROM_GOAL:
-                    intersection = intersect_pts1 if path1.shape[0] > path2.shape[0] else intersect_pts2
+                # if SPEED_UP_ARM == SpeedUpArm.NEAREST_TO_GOAL:
+                #     intersection = intersect_pts1 if path1.shape[0] < path2.shape[0] else intersect_pts2
+                # elif SPEED_UP_ARM == SpeedUpArm.FURTHEST_FROM_GOAL:
+                #     intersection = intersect_pts1 if path1.shape[0] > path2.shape[0] else intersect_pts2
+                intersection = intersect_pts2
 
                 # set collision point as first or last collision point in intersection pts
                 #TODO: fix depending on arm speedup??? don't want to access collision_point directly
@@ -117,11 +107,12 @@ def main():
                 elif RESET_VELOCITY_AT == ResetPoint.FIRST_POINT:
                     arm2_sm.collision_point = intersection[0,:]
 
+                logger.info("COLLISION POINT: {}".format(arm2_sm.collision_point))
+
                 # TODO: set arm nearest goal to inc in speed
                 # update current path ONLY to first OR last collision point, keep initial path post collision pt
                 path2_col_idx = np.where(path2 == arm2_sm.collision_point)[0][0]
 
-                # NOTE: temp pre-set velocities:
                 new_path1, new_path2 = update_velocity(path1, path2, vel1=0.03, vel2=0.08, idx=path2_col_idx)
                 
                 # set new path and collision point
@@ -129,7 +120,7 @@ def main():
                 arm1_sm.set_path(new_path1, intersect_pts1[intersect_pts1.shape[0]-1])
                 arm2_sm.set_path(new_path2, intersect_pts2[intersect_pts2.shape[0]-1])
                 logger.info("UPDATED VELOCITY FOR COLLISION AVOIDANCE")
-                logger.info("vel1: {}, vel2: {}".format(0.03, 0.8))
+                # logger.info("")
             else:
                 # reset paths velocities if no more intersections
                 logger.info("NO COLLISION DETECTED!")

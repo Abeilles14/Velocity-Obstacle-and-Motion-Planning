@@ -15,7 +15,7 @@ from shapely.geometry import LineString, MultiPoint, shape
 from RRTStar import RRTStar
 from arm import Arm
 from objects import Object
-from velocity_control import interpolate, update_velocity
+from velocity_control import linear_interpolation, update_velocity
 from arm import Arm
 
 logger = logging.getLogger(__name__)
@@ -207,8 +207,8 @@ def main():
     plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
 
     # initialize paths
-    path1 = interpolate(l1, STEP_SIZE)
-    path2 = interpolate(l2, STEP_SIZE)
+    path1 = linear_interpolation(l1, STEP_SIZE)
+    path2 = linear_interpolation(l2, STEP_SIZE)
 
     for i in range(l1.shape[0]-1):
         ax.plot([l1[i,0], l1[i+1,0]], [l1[i,1], l1[i+1,1]], [l1[i,2], l1[i+1,2]], color = 'orange', linewidth=1, zorder=15)

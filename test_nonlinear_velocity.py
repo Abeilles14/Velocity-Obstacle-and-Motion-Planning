@@ -1,20 +1,8 @@
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-from mpl_toolkits import mplot3d
-from enum import Enum
-import logging
-import pickle
-from scipy.interpolate import interp1d
-from ground.base import get_context
-from bentley_ottmann.planar import segments_intersect
-from Geometry3D import *
 
-from shapely.geometry import LineString, MultiPoint, shape
-from RRTStar import RRTStar
-from arm import Arm
-from objects import Object
-from arm import Arm
+from scipy.optimize import fsolve
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -107,19 +95,54 @@ def run_path(path1):
 
     plt.show()
 
+def my_lin(lb, ub, step, steps, spacing=1.1):
+    span = (ub-lb)
+    dx = step / (steps-1)
+
+    return [lb + (i*dx)**spacing*span for i in range(steps)]
+
+def quadratic_interpolation(lb, ub, step):
+    li = 0.01 # last interval (min accel)
+    
+    # first, solve equation system to find tf, a, b, c
+    # c = lb
+    # a + b + c = step
+    # a*tf**2 + b*tf + c = ub
+    # 2*a*tf + b = li
+
+    b = 2*ub - np.sqrt(4*ub**2 - 4*ub*step + li**2)
+    a = step - b
+    c = 0
+    tf = (li - b)/(2*(step - b))  # tf = total # of samples
+    
+    arr = []
+    for x in range(round(tf)):
+        # quadratic equation:
+        y = a*x**2 + b*x + c
+        arr.append(y)
+
+    print(y)
+
+    return np.array(arr)
+
 def interpolate(P, step, show_interplot=False):
     x, y, z = P.T
     xd = np.diff(x)
     yd = np.diff(y)
     zd = np.diff(z)
     dist = np.sqrt(xd**2 + yd**2 + zd**2)
-    _u = np.cumsum(dist)
-    u = np.hstack([[0], _u])
+    u_ = np.cumsum(dist)
+    u = np.hstack([[0], u_])
 
     # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
-    # t = np.logspace(0, u.max()+step, endpoint=True, base=1.2)   # base start, base stop, base
-    t = np.arange(0, u.max()+step, step)  # start val, end val, steps         
-
+    # t = np.arange(0, u.max()+step, step)  # start val, end val, steps     
+    # t = np.logspace(0, u.max(), endpoint=True, base=1.2)   # base start, base stop, base    
+    # t = np.multiply(t_[:], t_[:])
+    # t = my_lin(t_[0], t_[-1], 0.08, len(t_), 0.8)
+    # t = func(0, u.max())
+    t = quadratic_interpolation(0, u.max(), 0.08)
+    print(u.max())
+    print(t)
 
     xn = np.interp(t, u, x)     # TODO: make sure fp and xp len matches
     yn = np.interp(t, u, y)
@@ -139,14 +162,13 @@ def interpolate(P, step, show_interplot=False):
     return path
 
 def test():
-    sampling = 50
-    R = 20
-    x_ = R * np.linspace(-1, 1, sampling)
-    y_ = np.logspace(1, 10, sampling, base=1.4)
+    x, y =  fsolve(equations, (5, 5))
+    print(equations((x, y)))
+    print(x, y)
 
-    plt.scatter(x_, y_)
-    plt.axis("square")
-    plt.show()
+def equations(p):
+    x, y = p
+    return (y - x**2 -7 + 5*x, 4*y - 8*x + 21)
     
 if __name__ == '__main__':
     main()

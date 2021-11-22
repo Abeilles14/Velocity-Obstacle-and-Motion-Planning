@@ -17,7 +17,7 @@ from path_shortening import shorten_path
 from obstacles import Parallelepiped
 from arm import Arm
 from objects import Object
-from velocity_control import interpolate
+from velocity_control import linear_interpolation
 from constants import *
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ class ArmStateMachine:
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
                 rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
-                sampled_path = interpolate(rrts_path, INIT_VEL)
+                sampled_path = linear_interpolation(rrts_path, INIT_VEL)
                 self.path = sampled_path
                 self.compute_path = False   # don't compute path again until destination
 

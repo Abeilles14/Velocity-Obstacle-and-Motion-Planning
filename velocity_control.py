@@ -10,6 +10,7 @@ from RRTStar import RRTStar
 from arm import Arm
 from objects import Object
 from constants import *
+from test_nonlinear_velocity import quadratic_interpolation
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -19,7 +20,7 @@ logger.setLevel(logging.INFO)
 # calculate all distances between the points
 # generate the coordinates on the curve by cumulative summing
 # interpolate the x- and y-coordinates independently with respect to the new coords
-def interpolate(P, step, show_interplot=False):
+def linear_interpolation(P, step, show_interplot=False):
     x, y, z = P.T
     xd = np.diff(x)
     yd = np.diff(y)
@@ -28,9 +29,10 @@ def interpolate(P, step, show_interplot=False):
     _u = np.cumsum(dist)
     u = np.hstack([[0], _u])
 
-    # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
+    # for const speed:
     t = np.arange(0, u.max()+step, step)
-    xn = np.interp(t, u, x)     # TODO: make sure fp and xp len matches
+
+    xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
 
@@ -46,6 +48,57 @@ def interpolate(P, step, show_interplot=False):
     path = np.column_stack((xn, yn, zn))
 
     return path
+
+def nonlinear_interpolation(P, step, show_interplot=False):
+    x, y, z = P.T
+    xd = np.diff(x)
+    yd = np.diff(y)
+    zd = np.diff(z)
+    dist = np.sqrt(xd**2 + yd**2 + zd**2)
+    _u = np.cumsum(dist)
+    u = np.hstack([[0], _u])
+
+    # for const speed:
+    t = quadratic_range(0, u.max(), step)
+
+    xn = np.interp(t, u, x)
+    yn = np.interp(t, u, y)
+    zn = np.interp(t, u, z)
+
+    if show_interplot:
+        f = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.plot(x, y, z, 'o', alpha=0.3)
+        ax.plot(xn, yn, zn, 'ro', markersize=2)
+        ax.set_xlim([-2.5, 2.5])
+        ax.set_ylim([-2.5, 2.5])
+        ax.set_zlim([0.0, 3.0])
+    
+    path = np.column_stack((xn, yn, zn))
+
+    return path
+
+def quadratic_range(lb, ub, step):
+    li = 0.01 # last interval (min accel)
+    
+    # first, solve equation system to find tf, a, b, c
+    # c = lb
+    # a + b + c = step
+    # a*tf**2 + b*tf + c = ub
+    # 2*a*tf + b = li
+
+    b = 2*ub - np.sqrt(4*ub**2 - 4*ub*step + li**2)
+    a = step - b
+    c = 0
+    tf = (li - b)/(2*(step - b))  # tf = total # of samples
+    
+    arr = []
+    for x in range(round(tf)):
+        # quadratic equation:
+        y = a*x**2 + b*x + c
+        arr.append(y)
+
+    return np.array(arr)
 
 def find_intersection(path1, path2, arm1, arm2, animate=False):
     animate = False
@@ -94,27 +147,30 @@ def update_velocity(path1, path2, vel1, vel2, idx=None):
     """
 
     if idx == None:     # no collision
-        new_path1 = interpolate(path1, vel1)
-        new_path2 = interpolate(path2, vel2)
+        new_path1 = linear_interpolation(path1, vel1)
+        new_path2 = linear_interpolation(path2, vel2)
     else:
-        new_path2_to_col = interpolate(path2[:idx,:], vel2)    # interpolate until collision pt
+        # speed up arm to a constant velocity
+        # new_path2_to_col = linear_interpolation(path2[:idx,:], vel2)    # interpolate until collision pt
+        new_path1 = linear_interpolation(path2, vel2)
         
+        # find where to reset slow path to normal velocity
+        # fast_path_idx = new_path2_to_col.shape[0]
+        # init_path_idx = (fast_path_idx*vel2)/0.08
+        # slow_path_idx = (fast_path_idx*vel2)/vel1
+        
+        # path_reset_idx = round((init_path_idx/slow_path_idx)*fast_path_idx)
+
         # want path1 to have same length as path 2 to resume init vel at same time
         # first interpolate pts until collision point
         # then only count N pts from that path, where N is new_path2's shape
-        new_path1_to_col = interpolate(path1[:idx,:], vel1)[:new_path2_to_col.shape[0]-1,:]
-    
-        # find where to reset slow path to normal velocity
-        fast_path_idx = new_path2_to_col.shape[0]
-        init_path_idx = (fast_path_idx*vel2)/0.08
-        slow_path_idx = (fast_path_idx*vel2)/vel1
-
-        path_reset_idx = round((init_path_idx/slow_path_idx)*fast_path_idx)
+        # new_path1_to_col = nonlinear_interpolation(path1[:path_reset_idx,:], vel1)
+        new_path2 = nonlinear_interpolation(path1, vel1)
 
         # concat new vel path to collision and post-collision init vel path
         # this new path has adjusted vel until last collision point, then back to regular vel
-        new_path2 = np.concatenate((new_path2_to_col, np.delete(path2, np.arange(0, idx), axis=0)), axis=0)
-        new_path1 = np.concatenate((new_path1_to_col, np.delete(path1, np.arange(0,path_reset_idx-1), axis=0)), axis=0)
+        # new_path2 = np.concatenate((new_path2_to_col, np.delete(path2, np.arange(0, idx), axis=0)), axis=0)
+        # new_path1 = np.concatenate((new_path1_to_col, np.delete(path1, np.arange(0,path_reset_idx-1), axis=0)), axis=0)
 
     return new_path1, new_path2
 
