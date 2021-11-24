@@ -23,6 +23,10 @@ class CollisionUpdateVel(Enum):
     START = 1
     N_POINTS_BEFORE = 2
 
+class Interpolate(Enum):
+    QUADRATIC = 1
+    LOGARITHMIC = 2
+
 ARM1_HOME_POS = np.array([0.0, 1.0, 0.0])
 ARM2_HOME_POS = np.array([0.0, -1.0, 0.0])
 
@@ -31,6 +35,7 @@ OBJ1 = np.array([-0.5, -1.0, 2.5])
 BOWL =  np.array([2, 0.0, 1.0])
 
 INIT_VEL = 0.05
+INC_VEL = 0.08
 ABS_TOLERANCE = 0.055
 THRESHOLD_DIST = 0.5
 

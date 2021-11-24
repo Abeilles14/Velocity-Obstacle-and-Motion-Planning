@@ -208,9 +208,11 @@ class ArmStateMachine:
         self.state = self.next_functions[self.state]()
 
         # if at final collision point, go back into planning state to recheck collisions
+        # TODO: fix bug here, collision point reached never detected
         if (self.collision_point != np.empty(3)).all:
             if (self.arm.get_position() == self.collision_point).all():
-                logger.info("Collision Pt reached - Resetting Vel & Check Collisions...")
+                logger.info("{} Reached Collision Pt {}".format(self.arm.get_name(), self.collision_point))
+                logger.info("Resetting Velocity & Checking Collisions...")
                 self.collision_point = np.empty(3)  # reset collision point when reached
                 self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
                 self.check_collisions = True
@@ -218,7 +220,7 @@ class ArmStateMachine:
     def get_path(self):
         return self.path
 
-    def set_path(self, path, point):
+    def set_path(self, path, point=np.empty(3)):
         self.path = path
         self.collision_point = point
         

@@ -1,7 +1,7 @@
 # COLLISION AVOIDANCE MECHANISM
 import numpy as np
 import matplotlib.pyplot as plt
-import time
+import math
 from mpl_toolkits import mplot3d
 from enum import Enum
 import logging
@@ -78,6 +78,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
 
     return path
 
+
 def quadratic_range(lb, ub, step):
     li = 0.01 # last interval (min accel)
     
@@ -99,6 +100,25 @@ def quadratic_range(lb, ub, step):
         arr.append(y)
 
     return np.array(arr)
+
+def logarithmic_range(lb, ub, step):
+    li = 0.005
+
+    # first, solve equation system to find a, t, b, c
+    # y = logA(t-B) + c
+    # y' = 1/(ln(A)*(t-B))
+    # choose A by tuning while A>1, start with 1.2 maybe, more gradual decel small A, fast decel big A
+    a = 1.2
+    c = math.log(li*math.log(a, math.e), math.e)/(math.log(a, math.e) + ub)
+    b = 1 - a**(lb - c)
+
+    arr = []
+    # for x in range(round(tf)):
+    #     # quadratic equation:
+    #     y = a*x**2 + b*x + c
+    #     arr.append(y)
+
+    # return np.array(arr)
 
 def find_intersection(path1, path2, arm1, arm2, animate=False):
     animate = False
@@ -135,7 +155,7 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
 
 # path 1 init vel is 0.08, path2 init vel is 0.08
 
-def update_velocity(path1, path2, vel1, vel2, idx=None):
+def update_velocity(p_fast, p_slow, vel, idx_fast=None, idx_slow=None):
     """ Update velocity of both arm paths.
 
     Keyword Arguments:
@@ -146,33 +166,21 @@ def update_velocity(path1, path2, vel1, vel2, idx=None):
     idx -- index at which we want vel to reset to init
     """
 
-    if idx == None:     # no collision
-        new_path1 = linear_interpolation(path1, vel1)
-        new_path2 = linear_interpolation(path2, vel2)
+    if idx_fast == None and idx_slow == None:     # no collision, reset vels
+        fast_path = linear_interpolation(p_fast, vel)
+        slow_path = linear_interpolation(p_slow, vel)
     else:
+        # choose whether to speed up arm nearest or furthest to goal
         # speed up arm to a constant velocity
-        # new_path2_to_col = linear_interpolation(path2[:idx,:], vel2)    # interpolate until collision pt
-        new_path1 = linear_interpolation(path2, vel2)
-        
-        # find where to reset slow path to normal velocity
-        # fast_path_idx = new_path2_to_col.shape[0]
-        # init_path_idx = (fast_path_idx*vel2)/0.08
-        # slow_path_idx = (fast_path_idx*vel2)/vel1
-        
-        # path_reset_idx = round((init_path_idx/slow_path_idx)*fast_path_idx)
-
-        # want path1 to have same length as path 2 to resume init vel at same time
-        # first interpolate pts until collision point
-        # then only count N pts from that path, where N is new_path2's shape
-        # new_path1_to_col = nonlinear_interpolation(path1[:path_reset_idx,:], vel1)
-        new_path2 = nonlinear_interpolation(path1, vel1)
+        new_col_fast_path = linear_interpolation(p_fast[:idx_fast,:], vel)    # interpolate until collision pt 2
+        new_col_slow_path = nonlinear_interpolation(p_slow[:idx_slow,:], INIT_VEL)
 
         # concat new vel path to collision and post-collision init vel path
         # this new path has adjusted vel until last collision point, then back to regular vel
-        # new_path2 = np.concatenate((new_path2_to_col, np.delete(path2, np.arange(0, idx), axis=0)), axis=0)
-        # new_path1 = np.concatenate((new_path1_to_col, np.delete(path1, np.arange(0,path_reset_idx-1), axis=0)), axis=0)
+        fast_path = np.concatenate((new_col_fast_path, np.delete(p_fast, np.arange(0, idx_fast), axis=0)), axis=0)
+        slow_path = np.concatenate((new_col_slow_path, np.delete(p_slow, np.arange(0, idx_slow), axis=0)), axis=0)
 
-    return new_path1, new_path2
+    return fast_path, slow_path
 
 def euclidean_distance(point1, point2):
     distance = np.linalg.norm(point1-point2)
