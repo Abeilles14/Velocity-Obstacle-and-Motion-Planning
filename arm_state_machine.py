@@ -208,7 +208,6 @@ class ArmStateMachine:
         self.state = self.next_functions[self.state]()
 
         # if at final collision point, go back into planning state to recheck collisions
-        # TODO: fix bug here, collision point reached never detected
         if (self.collision_point != np.empty(3)).all:
             if (self.arm.get_position() == self.collision_point).all():
                 logger.info("{} Reached Collision Pt {}".format(self.arm.get_name(), self.collision_point))

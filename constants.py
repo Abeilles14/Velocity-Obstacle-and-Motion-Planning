@@ -18,11 +18,6 @@ class SpeedUpArm(Enum):
     NEAREST_TO_GOAL = 1
     FURTHEST_FROM_GOAL = 2
 
-# when do we want to change speed?
-class CollisionUpdateVel(Enum):
-    START = 1
-    N_POINTS_BEFORE = 2
-
 class Interpolate(Enum):
     QUADRATIC = 1
     LOGARITHMIC = 2
@@ -47,7 +42,6 @@ PAUSE_TIME = 0.0005
 ####################
 
 RESET_VELOCITY_AT = ResetPoint.FIRST_POINT
-SPEED_UP_ARM = SpeedUpArm.NEAREST_TO_GOAL
-UPDATE_VEL = CollisionUpdateVel.START
+SPEED_UP_ARM = SpeedUpArm.FURTHEST_FROM_GOAL
 
 N_POINTS = 10   # threshold * pt dist? (for UPDATE_VEL_AT)
