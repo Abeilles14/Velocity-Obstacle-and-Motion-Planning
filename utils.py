@@ -5,7 +5,110 @@ from matplotlib import path
 import matplotlib.pyplot as plt
 from numpy.linalg import norm
 
+# Convert xyz-data to a parametrized curve
+# calculate all distances between the points
+# generate the coordinates on the curve by cumulative summing
+# interpolate the x- and y-coordinates independently with respect to the new coords
+def linear_interpolation(P, step, show_interplot=False):
+    x, y, z = P.T
+    xd = np.diff(x)
+    yd = np.diff(y)
+    zd = np.diff(z)
+    dist = np.sqrt(xd**2 + yd**2 + zd**2)
+    _u = np.cumsum(dist)
+    u = np.hstack([[0], _u])
 
+    # for const speed:
+    t = np.arange(0, u.max()+step, step)
+
+    xn = np.interp(t, u, x)
+    yn = np.interp(t, u, y)
+    zn = np.interp(t, u, z)
+
+    if show_interplot:
+        f = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.plot(x, y, z, 'o', alpha=0.3)
+        ax.plot(xn, yn, zn, 'ro', markersize=2)
+        ax.set_xlim([-2.5, 2.5])
+        ax.set_ylim([-2.5, 2.5])
+        ax.set_zlim([0.0, 3.0])
+    
+    path = np.column_stack((xn, yn, zn))
+
+    return path
+
+def nonlinear_interpolation(P, step, show_interplot=False):
+    x, y, z = P.T
+    xd = np.diff(x)
+    yd = np.diff(y)
+    zd = np.diff(z)
+    dist = np.sqrt(xd**2 + yd**2 + zd**2)
+    _u = np.cumsum(dist)
+    u = np.hstack([[0], _u])
+
+    # for const speed:
+    t = quadratic_range(0, u.max(), step)
+
+    xn = np.interp(t, u, x)
+    yn = np.interp(t, u, y)
+    zn = np.interp(t, u, z)
+
+    if show_interplot:
+        f = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.plot(x, y, z, 'o', alpha=0.3)
+        ax.plot(xn, yn, zn, 'ro', markersize=2)
+        ax.set_xlim([-2.5, 2.5])
+        ax.set_ylim([-2.5, 2.5])
+        ax.set_zlim([0.0, 3.0])
+    
+    path = np.column_stack((xn, yn, zn))
+
+    return path
+
+
+def quadratic_range(lb, ub, step):
+    li = 0.01 # last interval (min accel)
+    
+    # first, solve equation system to find tf, a, b, c
+    # c = lb
+    # a + b + c = step
+    # a*tf**2 + b*tf + c = ub
+    # 2*a*tf + b = li
+
+    b = 2*ub - np.sqrt(4*ub**2 - 4*ub*step + li**2)
+    a = step - b
+    c = 0
+    tf = (li - b)/(2*(step - b))  # tf = total # of samples
+    
+    arr = []
+    for x in range(round(tf)):
+        # quadratic equation:
+        y = a*x**2 + b*x + c
+        arr.append(y)
+
+    return np.array(arr)
+
+def logarithmic_range(lb, ub, step):
+    li = 0.005
+
+    # first, solve equation system to find a, t, b, c
+    # y = logA(t-B) + c
+    # y' = 1/(ln(A)*(t-B))
+    # choose A by tuning while A>1, start with 1.2 maybe, more gradual decel small A, fast decel big A
+    a = 1.2
+    c = math.log(li*math.log(a, math.e), math.e)/(math.log(a, math.e) + ub)
+    b = 1 - a**(lb - c)
+
+    arr = []
+    # for x in range(round(tf)):
+    #     # quadratic equation:
+    #     y = a*x**2 + b*x + c
+    #     arr.append(y)
+
+    # return np.array(arr)
+    
 def isCollisionFreeVertex(obstacles, xy):
     collFree = True
 

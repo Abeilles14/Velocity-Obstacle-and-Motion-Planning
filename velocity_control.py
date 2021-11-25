@@ -11,114 +11,11 @@ from arm import Arm
 from objects import Object
 from constants import *
 from test_nonlinear_velocity import quadratic_interpolation
+from utils import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.INFO)
-
-# Convert xyz-data to a parametrized curve
-# calculate all distances between the points
-# generate the coordinates on the curve by cumulative summing
-# interpolate the x- and y-coordinates independently with respect to the new coords
-def linear_interpolation(P, step, show_interplot=False):
-    x, y, z = P.T
-    xd = np.diff(x)
-    yd = np.diff(y)
-    zd = np.diff(z)
-    dist = np.sqrt(xd**2 + yd**2 + zd**2)
-    _u = np.cumsum(dist)
-    u = np.hstack([[0], _u])
-
-    # for const speed:
-    t = np.arange(0, u.max()+step, step)
-
-    xn = np.interp(t, u, x)
-    yn = np.interp(t, u, y)
-    zn = np.interp(t, u, z)
-
-    if show_interplot:
-        f = plt.figure()
-        ax = plt.axes(projection='3d')
-        ax.plot(x, y, z, 'o', alpha=0.3)
-        ax.plot(xn, yn, zn, 'ro', markersize=2)
-        ax.set_xlim([-2.5, 2.5])
-        ax.set_ylim([-2.5, 2.5])
-        ax.set_zlim([0.0, 3.0])
-    
-    path = np.column_stack((xn, yn, zn))
-
-    return path
-
-def nonlinear_interpolation(P, step, show_interplot=False):
-    x, y, z = P.T
-    xd = np.diff(x)
-    yd = np.diff(y)
-    zd = np.diff(z)
-    dist = np.sqrt(xd**2 + yd**2 + zd**2)
-    _u = np.cumsum(dist)
-    u = np.hstack([[0], _u])
-
-    # for const speed:
-    t = quadratic_range(0, u.max(), step)
-
-    xn = np.interp(t, u, x)
-    yn = np.interp(t, u, y)
-    zn = np.interp(t, u, z)
-
-    if show_interplot:
-        f = plt.figure()
-        ax = plt.axes(projection='3d')
-        ax.plot(x, y, z, 'o', alpha=0.3)
-        ax.plot(xn, yn, zn, 'ro', markersize=2)
-        ax.set_xlim([-2.5, 2.5])
-        ax.set_ylim([-2.5, 2.5])
-        ax.set_zlim([0.0, 3.0])
-    
-    path = np.column_stack((xn, yn, zn))
-
-    return path
-
-
-def quadratic_range(lb, ub, step):
-    li = 0.01 # last interval (min accel)
-    
-    # first, solve equation system to find tf, a, b, c
-    # c = lb
-    # a + b + c = step
-    # a*tf**2 + b*tf + c = ub
-    # 2*a*tf + b = li
-
-    b = 2*ub - np.sqrt(4*ub**2 - 4*ub*step + li**2)
-    a = step - b
-    c = 0
-    tf = (li - b)/(2*(step - b))  # tf = total # of samples
-    
-    arr = []
-    for x in range(round(tf)):
-        # quadratic equation:
-        y = a*x**2 + b*x + c
-        arr.append(y)
-
-    return np.array(arr)
-
-def logarithmic_range(lb, ub, step):
-    li = 0.005
-
-    # first, solve equation system to find a, t, b, c
-    # y = logA(t-B) + c
-    # y' = 1/(ln(A)*(t-B))
-    # choose A by tuning while A>1, start with 1.2 maybe, more gradual decel small A, fast decel big A
-    a = 1.2
-    c = math.log(li*math.log(a, math.e), math.e)/(math.log(a, math.e) + ub)
-    b = 1 - a**(lb - c)
-
-    arr = []
-    # for x in range(round(tf)):
-    #     # quadratic equation:
-    #     y = a*x**2 + b*x + c
-    #     arr.append(y)
-
-    # return np.array(arr)
 
 def find_intersection(path1, path2, arm1, arm2, animate=False):
     animate = False
@@ -181,6 +78,31 @@ def update_velocity(p_fast, p_slow, vel, idx_fast=None, idx_slow=None):
         slow_path = np.concatenate((new_col_slow_path, np.delete(p_slow, np.arange(0, idx_slow), axis=0)), axis=0)
 
     return fast_path, slow_path
+
+def common_goal_collision(path1, path2, arm1, arm2):
+    if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, speed up arm1
+        new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1.shape[0]-1, idx_slow=path2.shape[0]-1)
+        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
+    else:  # arm2 nearer to goal, speed up arm2
+        new_path1, new_path2 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2.shape[0]-1, idx_slow=path1.shape[0]-1)
+        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
+    return new_path1, new_path2
+
+def adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2):
+    if SPEED_UP_ARM == SpeedUpArm.NEAREST_TO_GOAL:
+        if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, speed up arm1
+            new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
+            logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
+        else:  # arm2 nearer to goal, speed up arm2
+            new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
+            logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
+    elif SPEED_UP_ARM == SpeedUpArm.FURTHEST_FROM_GOAL:
+        if path1.shape[0] > path2.shape[0]: # arm1 further from goal, speed up arm1
+            new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
+            logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
+        else:  # arm2 further to goal, speed up arm2
+            new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
+            logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
 
 def euclidean_distance(point1, point2):
     distance = np.linalg.norm(point1-point2)

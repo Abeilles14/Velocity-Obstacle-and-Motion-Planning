@@ -8,7 +8,7 @@ from obstacles import Parallelepiped
 from objects import Object
 from arm import Arm
 from arm_state_machine import ArmStateMachine, ArmState
-from velocity_control import find_intersection, update_velocity, euclidean_distance
+from velocity_control import *
 from constants import *
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,7 @@ def main():
 
     arm1_collision = np.empty(3)
     arm2_collision = np.empty(3)
+   
     #### MAIN LOOP ####
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
         arm1_sm.run_once()
@@ -90,7 +91,6 @@ def main():
                 logger.debug("INTERSECTIONS: {}, SHAPE: {}".format(intersect_pts2, intersect_pts2.shape[0]))
 
                 # set collision point as first or last collision point in intersection pts
-                #TODO: fix depending on arm speedup??? don't want to access collision_point directly
                 if RESET_VELOCITY_AT == ResetPoint.LAST_POINT:
                     arm1_collision = intersect_pts1[-1,:]
                     arm2_collision = intersect_pts2[-1,:]
@@ -106,27 +106,15 @@ def main():
 
                 # choose whether to speed up arm nearest or furthest to goal
                 # update paths such that speed is inc/dec until collision point only
-                if SPEED_UP_ARM == SpeedUpArm.NEAREST_TO_GOAL:
-                    if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, speed up arm1
-                        new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
-                        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-                    else:  # arm2 nearer to goal, speed up arm2
-                        new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
-                        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
-                elif SPEED_UP_ARM == SpeedUpArm.FURTHEST_FROM_GOAL:
-                    if path1.shape[0] > path2.shape[0]: # arm1 further from goal, speed up arm1
-                        new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
-                        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-                    else:  # arm2 further to goal, speed up arm2
-                        new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
-                        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
+                new_path1, new_path2 = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
+                
             else:
                  # check if common goal
                 if euclidean_distance(path1[-1,:], path2[-1,:]) <= THRESHOLD_DIST:
                     logger.info("ARMS MOVING TOWARD COMMON GOAL")
                     new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
                 else:
-                    # reset paths velocities if no more intersections
+                    # no collision, or reset paths velocities if collision avoided
                     logger.info("NO COLLISION DETECTED!")
                     new_path1, new_path2 = update_velocity(path1, path2, vel=INIT_VEL)
                     arm1_collision, arm2_collision = np.empty(3), np.empty(3)
@@ -136,18 +124,6 @@ def main():
             arm2_sm.set_path(new_path2, arm2_collision)
 
     logger.info("Pick and Place Simulation End")
-
-def common_goal_collision(path1, path2, arm1, arm2):
-    # arm1_collision = path1[-1,:]
-    # arm2_collision = path2[-1,:]
-
-    if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, speed up arm1
-        new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1.shape[0]-1, idx_slow=path2.shape[0]-1)
-        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-    else:  # arm2 nearer to goal, speed up arm2
-        new_path1, new_path2 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2.shape[0]-1, idx_slow=path1.shape[0]-1)
-        logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-    return new_path1, new_path2
 
 if __name__ == '__main__':
     main()
