@@ -1,7 +1,6 @@
 # COLLISION AVOIDANCE MECHANISM
 import numpy as np
 import matplotlib.pyplot as plt
-
 import logging
 
 from arm import Arm
@@ -14,7 +13,7 @@ logger.setLevel(logging.INFO)
 
 
 INIT_VEL = 0.05 #controls speed of paths
-INC_VEL = 0.05
+INC_VEL = 0.06
 THRESHOLD_DIST = 1
 
 def main():
@@ -30,10 +29,10 @@ def main():
     ax.set_ylim([0,12])
     ax.set_zlim([0,12])
 
-    l1 = np.array([[0.0,0.0,0.0], [6.5,7.0,7.0], [9.0,1.0,2.0]])
-    l2 = np.array([[2.0,0.0,3.0], [4.0,6.0,6.0], [5.0,4.0,4.0], [10.0,6.0,6.0]])
-    # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
-    # l2 = np.array([[2.0,0.0,3.0], [4.0,6.0,6.0], [10.0,2.0,2.0]])
+    # l1 = np.array([[0.0,0.0,0.0], [6.5,7.0,7.0], [9.0,1.0,2.0]])
+    # l2 = np.array([[2.0,0.0,3.0], [4.0,6.0,6.0], [5.0,4.0,4.0], [10.0,6.0,6.0]])
+    l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
+    l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,8.0,8.0]]) #[11.0,6.0,7.0]
 
     # initialize arms
     # start at 1 pts of each lines, end at last pt of each line
@@ -84,9 +83,16 @@ def main():
                 # update paths such that speed is inc/dec until collision point only
                 path1, path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
                 logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-
+            else:
+                # check whether common goal
+                if path1.shape[0] > 0 and path2.shape[0] > 0:
+                    if euclidean_distance(path1[-1], path2[-1]) <= THRESHOLD_DIST:
+                        logger.info("ARMS MOVING TOWARD COMMON GOAL")
+                        path1, path2 = common_goal_collision(path1, path2, arm1, arm2)
+                        arm1_collision, arm2_collision = path1[-1], path2[-1]
             check_collision = False
         else:
+            # if at collision point, reset collisions, check collisions again
             if (path1[0] == arm1_collision).all() or (path2[0] == arm2_collision).all():
                 print("RESETTING VELOCITY")
                 plt.plot(path1[0,0], path1[0,1], path1[0,2], 'o', color='yellow', markersize=5)
