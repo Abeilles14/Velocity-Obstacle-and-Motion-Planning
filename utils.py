@@ -4,6 +4,7 @@ from scipy.spatial import ConvexHull
 from matplotlib import path
 import matplotlib.pyplot as plt
 from numpy.linalg import norm
+import math
 
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points
@@ -47,7 +48,6 @@ def nonlinear_interpolation(P, step, show_interplot=False):
     _u = np.cumsum(dist)
     u = np.hstack([[0], _u])
 
-    # for const speed:
     t = quadratic_range(0, u.max(), step)
 
     xn = np.interp(t, u, x)
@@ -71,7 +71,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
 def quadratic_range(lb, ub, step):
     li = 0.01 # last interval (min accel)
     
-    # first, solve equation system to find tf, a, b, c
+    # first, solve equation system to find tf, a, b, c, where tf is the total # of points on new path
     # c = lb
     # a + b + c = step
     # a*tf**2 + b*tf + c = ub
