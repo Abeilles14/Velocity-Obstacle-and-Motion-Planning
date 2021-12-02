@@ -41,7 +41,7 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
         logging.debug("POS: {}, {}".format(path1[idx1], path2[idx2]))
         logging.debug("ARM_DIST: {}".format(arm_dist))
 
-        if (arm_dist <= THRESHOLD_DIST).all():
+        if (arm_dist <= COLLISION_RANGE).all():
             intersect_pts1.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
             intersect_pts2.append([path2[idx2,0], path2[idx2,1], path2[idx2,2]])
             
@@ -86,6 +86,7 @@ def common_goal_collision(path1, path2, arm1, arm2):
     else:  # arm2 nearer to goal, speed up arm2
         new_path1, new_path2 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2.shape[0]-1, idx_slow=path1.shape[0]-1)
         logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
+    
     return new_path1, new_path2
 
 def adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2):
@@ -103,6 +104,8 @@ def adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2):
         else:  # arm2 further to goal, speed up arm2
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
             logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
+    
+    return new_path1, new_path2
 
 def euclidean_distance(point1, point2):
     distance = np.linalg.norm(point1-point2)

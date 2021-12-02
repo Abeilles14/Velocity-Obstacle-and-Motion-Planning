@@ -14,7 +14,7 @@ import logging
 
 from utils import init_fonts
 from path_shortening import shorten_path
-from obstacles import Parallelepiped
+from obstacles import Table
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -156,7 +156,7 @@ def RRTStar(ax, obstacles, start, goal):
     logger.debug('RRT length: ', len(rrt))
 
     # Path construction from RRT:
-    logger.info('Constructing the path...')
+    logger.debug('Constructing the path...')
     i = len(rrt) - 1
     while True:
         i = rrt[i].costPrev
@@ -173,7 +173,7 @@ def RRTStar(ax, obstacles, start, goal):
             plt.pause(PAUSE_TIME)
 
     ### DRAW SHORTENED PATH ###
-    logger.info('Shortening the path...')
+    logger.debug('Shortening the path...')
     path = shorten_path(path, obstacles, smoothiters=SMOOTH_ITERS)
     path = np.flip(path, axis=0)
 

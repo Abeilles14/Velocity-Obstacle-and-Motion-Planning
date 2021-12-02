@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 import math
 
+from constants import LAST_INTERVAL
+
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points
 # generate the coordinates on the curve by cumulative summing
@@ -21,7 +23,7 @@ def linear_interpolation(P, step, show_interplot=False):
 
     # for const speed:
     t = np.arange(0, u.max()+step, step)
-
+    print("lengths: {}, {}, {}".format(len(t),len(u),len(x)))
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
@@ -48,8 +50,8 @@ def nonlinear_interpolation(P, step, show_interplot=False):
     _u = np.cumsum(dist)
     u = np.hstack([[0], _u])
 
-    t = quadratic_range(0, u.max(), step)
-
+    t = quadratic_range(0, u.max()+step, step)
+    print("lengths: {}, {}, {}".format(len(t),len(u),len(x)))
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
@@ -69,7 +71,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
 
 
 def quadratic_range(lb, ub, step):
-    li = 0.01 # last interval (min accel)
+    li = LAST_INTERVAL # last interval (min accel)
     
     # first, solve equation system to find tf, a, b, c, where tf is the total # of points on new path
     # c = lb
@@ -91,7 +93,7 @@ def quadratic_range(lb, ub, step):
     return np.array(arr)
 
 def logarithmic_range(lb, ub, step):
-    li = 0.005
+    li = LAST_INTERVAL
 
     # first, solve equation system to find a, t, b, c
     # y = logA(t-B) + c

@@ -14,11 +14,12 @@ import logging
 
 from RRTStar import RRTStar
 from path_shortening import shorten_path
-from obstacles import Parallelepiped
+from obstacles import Table
 from arm import Arm
 from objects import Object
-from velocity_control import linear_interpolation
+from velocity_control import linear_interpolation, euclidean_distance
 from constants import *
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -57,6 +58,7 @@ class ArmStateMachine:
         self.state = ArmState.PLANNING
         self.destination = Goal.OBJ
         self.check_collisions = True
+        self.pause = False
 
         logger.debug("ArmStateMachine:__init__")
         logger.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
@@ -88,6 +90,7 @@ class ArmStateMachine:
         logger.info("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
+                logger.info("COMPUTING {} NEW PATH PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
                 rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
                 sampled_path = linear_interpolation(rrts_path, INIT_VEL)
                 self.path = sampled_path
@@ -187,34 +190,51 @@ class ArmStateMachine:
 
     # set arm position and plot
     def _execute_path(self):
-        self.arm.set_position(np.array([self.path[0,0], self.path[0,1], self.path[0,2]]))
+        self.arm.set_position(np.array(self.path[0]))
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
 
         self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
         self.path = np.delete(self.path, 0, axis=0)     # delete current point from path
         plt.pause(PAUSE_TIME)
 
+    def _pause(self):
+        # stay at current position, do nothing
+        self.arm.set_position(np.array(self.path[0]))
+        logger.debug("{} pausing at: {}".format(self.arm.get_name(), self.arm.get_position()))
+
+
     def run_once(self):
         logger.debug("Running state {}".format(self.state))
-
-        # decide whether to check collisions in main after executing current state
-        if self.state == ArmState.PLANNING:
-            self.check_collisions = True
+        
+        # if pause flag, pause arm movement, don't update state or pos
+        if self.pause:
+            self._pause()
         else:
-            self.check_collisions = False
+            # decide whether to check collisions in main after executing current state
+            if self.state == ArmState.PLANNING:
+                self.check_collisions = True
+            else:
+                self.check_collisions = False
 
-        # execute the current state
-        self.state_functions[self.state]()
-        self.state = self.next_functions[self.state]()
+            # execute the current state
+            self.state_functions[self.state]()
+            self.state = self.next_functions[self.state]()
 
-        # if at final collision point, go back into planning state to recheck collisions
         if (self.collision_point != np.empty(3)).all:
+
+            # TODO: if slow arm at dist from collision point, pause arm until velocity reset and no more collision
+            if euclidean_distance(self.arm.get_position(), self.collision_point) <= SAFETY_ZONE:
+                self.pause = True
+            
+            # if at final collision point, go back into planning state to recheck collisions
             if (self.arm.get_position() == self.collision_point).all():
                 logger.info("{} Reached Collision Pt {}".format(self.arm.get_name(), self.collision_point))
                 logger.info("Resetting Velocity & Checking Collisions...")
                 self.collision_point = np.empty(3)  # reset collision point when reached
-                self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
+                # TODO: fix this
+                # self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
                 self.check_collisions = True
+                self.pause = False
 
     def get_path(self):
         return self.path

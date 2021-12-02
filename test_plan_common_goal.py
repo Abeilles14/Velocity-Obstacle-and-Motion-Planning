@@ -180,7 +180,7 @@ def geometry3D_test():
     r.show()
 
 STEP_SIZE = 0.08 #controls speed of paths
-THRESHOLD_DIST = 1
+COLLISION_RANGE = 1
 
 def main():
 
@@ -241,7 +241,7 @@ def main():
         # plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
         # plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
         
-        if (arm_dist <= THRESHOLD_DIST).all():
+        if (arm_dist <= COLLISION_RANGE).all():
             logger.debug("COLLISION IMMINENT!")
             intersect1.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
             intersect2.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])

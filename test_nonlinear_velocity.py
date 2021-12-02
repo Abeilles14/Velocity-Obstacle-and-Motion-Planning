@@ -9,7 +9,7 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 STEP_SIZE = 0.08 #controls speed of paths
-THRESHOLD_DIST = 1
+COLLISION_RANGE = 1
 
 def main():
 
@@ -26,7 +26,8 @@ def main():
 
     # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
     # l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,2.0,2.0]])
-    l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
+    # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
+    l1 = np.array([[0.0,0.0,0.0], [5.0,4.0,4.0]])
     # l2 = np.array([[ 2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,8.0,8.0]])
 
     # initialize arms
@@ -102,7 +103,7 @@ def my_lin(lb, ub, step, steps, spacing=1.1):
     return [lb + (i*dx)**spacing*span for i in range(steps)]
 
 def quadratic_interpolation(lb, ub, step):
-    li = 0.01 # last interval (min accel)
+    li = 0.0005 # last interval (min accel)
     
     # first, solve equation system to find tf, a, b, c
     # c = lb

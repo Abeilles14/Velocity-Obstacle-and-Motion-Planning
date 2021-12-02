@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 
 INIT_VEL = 0.05 #controls speed of paths
 INC_VEL = 0.05
-THRESHOLD_DIST = 1
+COLLISION_RANGE = 1
 
 def main():
 

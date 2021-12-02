@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 INIT_VEL = 0.05 #controls speed of paths
 INC_VEL = 0.06
-THRESHOLD_DIST = 1
+COLLISION_RANGE = 1
 
 def main():
 
@@ -86,7 +86,7 @@ def main():
             else:
                 # check whether common goal
                 if path1.shape[0] > 0 and path2.shape[0] > 0:
-                    if euclidean_distance(path1[-1], path2[-1]) <= THRESHOLD_DIST:
+                    if euclidean_distance(path1[-1], path2[-1]) <= COLLISION_RANGE:
                         logger.info("ARMS MOVING TOWARD COMMON GOAL")
                         path1, path2 = common_goal_collision(path1, path2, arm1, arm2)
                         arm1_collision, arm2_collision = path1[-1], path2[-1]
