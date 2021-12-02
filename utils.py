@@ -23,7 +23,6 @@ def linear_interpolation(P, step, show_interplot=False):
 
     # for const speed:
     t = np.arange(0, u.max()+step, step)
-    print("lengths: {}, {}, {}".format(len(t),len(u),len(x)))
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
@@ -49,7 +48,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
     dist = np.sqrt(xd**2 + yd**2 + zd**2)
     _u = np.cumsum(dist)
     u = np.hstack([[0], _u])
-    t = quadratic_range(0, u.max()+step, step)
+    t = natural_range(0, u.max()+step, step)
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
@@ -111,6 +110,23 @@ def log_range(lb, ub, step):
         # log equation:
         y = math.log((x-b), a) + c
         # y = 1/(math.log(a) *(x-b))
+        arr.append(y)
+
+    return np.array(arr)
+
+def natural_range(lb, ub, step):
+    li = 0.0005 # last interval (min accel)
+    
+    # first, solve equation system to find k, t, tf
+    mult = 0.01866  # 1.866 %
+    k = ub*(1+mult)
+    t = -1/math.log(1-step/k)
+    tf = math.log(1-ub/k)*(-t)
+    
+    arr = []
+    for x in range(round(tf)):
+        # natural equation:
+        y = k*(1- math.e **((-x)/t))
         arr.append(y)
 
     return np.array(arr)

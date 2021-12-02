@@ -22,12 +22,17 @@ class Interpolate(Enum):
     QUADRATIC = 1
     LOGARITHMIC = 2
 
-ARM1_HOME_POS = np.array([0.0, 1.0, 0.0])
-ARM2_HOME_POS = np.array([0.0, -1.0, 0.0])
+ARM1_HOME_POS = np.array([0.0, 1.0, 3.0])
+ARM2_HOME_POS = np.array([0.0, -1.0, 3.0])
 
-OBJ2 = np.array([0.0, 1.0, 2.5])
-OBJ1 = np.array([-0.5, -1.0, 2.5])
-BOWL =  np.array([2, 0.0, 1.0])
+OBJ2 = np.array([0.0, 1.0, 0.35])
+OBJ1 = np.array([-0.5, -1.0, 0.35])
+BOWL =  np.array([2, 0.0, 0.4])
+
+# obstacles_poses = [[-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5]]
+# obstacles_dims  = [[1.4, 1.0, 0.3], [3.0, 1.0, 0.3], [3.0, 1.0, 0.3]]
+OBSTACLE_POSES = [[0, 0, 0]]
+OBSTACLE_DIMS  = [[5.0, 3.0, 0.3]]
 
 INIT_VEL = 0.08
 INC_VEL = 0.08

@@ -162,6 +162,37 @@ def log_interpolation(lb, ub, step):
 
     return np.array(arr)
 
+def natural_interpolation(lb, ub, step):
+    li = 0.005 # last interval (min accel)
+    
+    # first, solve equation system to find a, t, b, c
+    # 
+
+
+    print("lb={}, ub={}, step={}".format(lb,ub,step))
+
+    mult = 0.01866  # 1.866 %
+    k = ub*(1+mult)
+    t = -1/math.log(1-step/k)
+    tf = math.log(1-ub/k)*(-t)
+
+    print("EQN mult={}, k={}, t={}, tf={}".format(mult,k,t,tf))
+    
+    arr = []
+    for x in range(round(tf)):
+        # natural equation:
+        y = k*(1- math.e **((-x)/t))
+        arr.append(y)
+
+    print("ARR: {}".format(arr))
+    # x = np.linspace(0,5,tf)
+    # fig = plt.figure()
+    # ax = fig.add_subplot(1, 1, 1)
+    # plt.plot(x,y, 'r')
+    # plt.show()
+
+    return np.array(arr)
+
 def interpolate(P, step, show_interplot=False):
     x, y, z = P.T
     xd = np.diff(x)
@@ -174,7 +205,7 @@ def interpolate(P, step, show_interplot=False):
     # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
     # t = np.arange(0, u.max()+step, step)  # start val, end val, steps     
 
-    t = quadratic_interpolation(0, u.max()+step, step)
+    t = natural_interpolation(0, u.max()+step, step)
     print(u.max())
     print(t)
 

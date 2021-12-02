@@ -88,6 +88,7 @@ def RRTStar(ax, obstacles, start, goal):
     start_node.cost = 0
     start_node.costPrev = 0
     rrt.append(start_node)
+    path = []  # final path
 
     ### RRT ALGORITHM ###
     start_time = time.time()

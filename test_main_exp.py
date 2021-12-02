@@ -4,7 +4,7 @@ import logging
 from math import *
 from matplotlib import pyplot as plt
 from utils import init_fonts
-from obstacles import Table
+from obstacles import Parallelepiped
 from objects import Object
 from arm import Arm
 from arm_state_machine import ArmStateMachine, ArmState
@@ -20,7 +20,7 @@ show_RRT = False
 
 ### Obstacles ###
 def add_obstacle(obstacles, pose, dim):
-	obstacle = Table()
+	obstacle = Parallelepiped()
 	obstacle.dimensions = dim
 	obstacle.pose = pose
 	obstacles.append(obstacle)
@@ -42,9 +42,13 @@ def main():
     mngr.window.wm_geometry("+500+0")
 
     ### SET UP STATIC OBSTACLES AND BOWL ###
+    # obstacles_poses = [ [-0.8, 0., 1.5], [ 1., 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
+    # obstacles_dims  = [ [1.4, 1.0, 0.2], [1.0, 1.0, 0.2], [3.0, 1.0, 0.2], [3.0, 1.0, 0.2] ]
+    obstacles_poses = [[-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5]]
+    obstacles_dims  = [[1.4, 1.0, 0.3], [3.0, 1.0, 0.3], [3.0, 1.0, 0.3]]
 
     obstacles = []
-    for pose, dim in zip(OBSTACLE_POSES, OBSTACLE_DIMS):
+    for pose, dim in zip(obstacles_poses, obstacles_dims):
         obstacles = add_obstacle(obstacles, pose, dim)
 
     for obstacle in obstacles: obstacle.draw(ax)
@@ -53,11 +57,11 @@ def main():
     # bowl
     ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=800)
     # TODO: put in pick_and_place sm ?
-    ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100, alpha=0.8)
-    ax.scatter3D(OBJ1[0], OBJ1[1], OBJ1[2], color='#99ccff', s=100, alpha=0.8)
+    ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100)
+    ax.scatter3D(OBJ1[0], OBJ1[1], OBJ1[2], color='#99ccff', s=100)
 
-    ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100, alpha=0.8)
-    ax.scatter3D(OBJ2[0], OBJ2[1], OBJ2[2], color='#99ff99', s=100, alpha=0.8)
+    ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100)
+    ax.scatter3D(OBJ2[0], OBJ2[1], OBJ2[2], color='#99ff99', s=100)
 
     arm1 = Arm(name="PSM1", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=OBJ1, velocity=INIT_VEL)
     arm2 = Arm(name="PSM2", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=OBJ2, velocity=INIT_VEL)

@@ -36,7 +36,8 @@ class Table:
         return verts
 
     def draw(self, ax):
-        ax.add_collection3d(Poly3DCollection(self.vertixes(), facecolors='k', linewidths=1, edgecolors='k', alpha=.25))
+        colors = (135 / 255, 92 / 255, 41 / 255)
+        ax.add_collection3d(Poly3DCollection(self.vertixes(), facecolors=colors, linewidths=1, edgecolors='k', alpha=.2))
 
 # Add Obstacles
 class Parallelepiped:

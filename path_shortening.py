@@ -46,6 +46,7 @@ def shorten_path(P, obstacles, smoothiters=30, log_verbose=False):
     #               the robot from start to goal without collision
     m = P.shape[0]
     l = np.zeros(m)
+    i, j = 0, 0
     for k in range(1, m):
         l[k] = norm(P[k,:]-P[k-1,:]) + l[k-1] # find all of the straight-line distances
     iters = 0
