@@ -91,17 +91,21 @@ def common_goal_collision(path1, path2, arm1, arm2):
 
 def adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2):
     if SPEED_UP_ARM == SpeedUpArm.NEAREST_TO_GOAL:
-        if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, speed up arm1
+        if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, slow arm2
+            arm2.set_velocity(0)
             new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
             logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-        else:  # arm2 nearer to goal, speed up arm2
+        else:  # arm2 nearer to goal, slow arm 1
+            arm1.set_velocity(0)
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
             logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
     elif SPEED_UP_ARM == SpeedUpArm.FURTHEST_FROM_GOAL:
-        if path1.shape[0] > path2.shape[0]: # arm1 further from goal, speed up arm1
+        if path1.shape[0] > path2.shape[0]: # arm1 further from goal, slow arm2
+            arm2.set_velocity(0)
             new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
             logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
-        else:  # arm2 further to goal, speed up arm2
+        else:  # arm2 further to goal, slow arm1
+            arm1.set_velocity(0)
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
             logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
     

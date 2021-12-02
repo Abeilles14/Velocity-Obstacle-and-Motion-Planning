@@ -44,6 +44,6 @@ PAUSE_TIME = 0.0005
 ####################
 
 RESET_VELOCITY_AT = ResetPoint.FIRST_POINT
-SPEED_UP_ARM = SpeedUpArm.FURTHEST_FROM_GOAL
+SPEED_UP_ARM = SpeedUpArm.NEAREST_TO_GOAL
 
 N_POINTS = 10   # threshold * pt dist? (for UPDATE_VEL_AT)

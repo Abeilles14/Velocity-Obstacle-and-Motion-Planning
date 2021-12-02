@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 from scipy.optimize import fsolve
 
@@ -20,14 +21,14 @@ def main():
     ax.set_xlabel('X, [m]')
     ax.set_ylabel('Y, [m]')
     ax.set_zlabel('Z, [m]')
-    ax.set_xlim([0,12])
-    ax.set_ylim([0,12])
-    ax.set_zlim([0,12])
+    ax.set_xlim([0,5])
+    ax.set_ylim([0,5])
+    ax.set_zlim([0,5])
 
     # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
     # l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,2.0,2.0]])
     # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
-    l1 = np.array([[0.0,0.0,0.0], [5.0,4.0,4.0]])
+    l1 = np.array([[0.0,0.0,0.0], [3.0,2.0,2.0]])
     # l2 = np.array([[ 2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,8.0,8.0]])
 
     # initialize arms
@@ -103,7 +104,7 @@ def my_lin(lb, ub, step, steps, spacing=1.1):
     return [lb + (i*dx)**spacing*span for i in range(steps)]
 
 def quadratic_interpolation(lb, ub, step):
-    li = 0.0005 # last interval (min accel)
+    li = 0 # last interval (min accel)
     
     # first, solve equation system to find tf, a, b, c
     # c = lb
@@ -111,7 +112,7 @@ def quadratic_interpolation(lb, ub, step):
     # a*tf**2 + b*tf + c = ub
     # 2*a*tf + b = li
 
-    b = 2*ub - np.sqrt(4*ub**2 - 4*ub*step + li**2)
+    b = 2*ub - np.sqrt((4*ub**2) - (4*ub*step) + (li**2))
     a = step - b
     c = 0
     tf = (li - b)/(2*(step - b))  # tf = total # of samples
@@ -126,6 +127,41 @@ def quadratic_interpolation(lb, ub, step):
 
     return np.array(arr)
 
+def log_interpolation(lb, ub, step):
+    li = 0.01 # last interval (min accel)
+    
+    # first, solve equation system to find a, t, b, c
+    # y = logA(t-B) + c
+    # y' = 1/(ln(A)*(t-B))
+    # choose A by tuning while A>1, start with 1.2 maybe, more gradual decel small A, fast decel big A
+    # C=LN(li*LN(A))/LN(A)+YN
+    # B = 1 - A^(Y1-C)
+    # tf = a^(lp-c)+b
+    print("lb={}, ub={}, step={}".format(lb,ub,step))
+
+    a = 2
+    c = (math.log(li*math.log(a))/math.log(a)) + ub
+    b = 1 - a**(step - c)
+    tf = a**(ub-c)+b  # tf = total # of samples
+
+    print("EQN a={}, c={}, b={}, tf={}".format(a,c,b,tf))
+    
+    arr = []
+    for x in range(round(tf)):
+        # quadratic equation:
+        y = math.log((x-b), a) + c
+        # y = 1/(math.log(a) *(x-b))
+        arr.append(y)
+
+    print("ARR: {}".format(arr))
+    # x = np.linspace(0,5,tf)
+    # fig = plt.figure()
+    # ax = fig.add_subplot(1, 1, 1)
+    # plt.plot(x,y, 'r')
+    # plt.show()
+
+    return np.array(arr)
+
 def interpolate(P, step, show_interplot=False):
     x, y, z = P.T
     xd = np.diff(x)
@@ -137,11 +173,8 @@ def interpolate(P, step, show_interplot=False):
 
     # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
     # t = np.arange(0, u.max()+step, step)  # start val, end val, steps     
-    # t = np.logspace(0, u.max(), endpoint=True, base=1.2)   # base start, base stop, base    
-    # t = np.multiply(t_[:], t_[:])
-    # t = my_lin(t_[0], t_[-1], 0.08, len(t_), 0.8)
-    # t = func(0, u.max())
-    t = quadratic_interpolation(0, u.max(), 0.08)
+
+    t = quadratic_interpolation(0, u.max()+step, step)
     print(u.max())
     print(t)
 

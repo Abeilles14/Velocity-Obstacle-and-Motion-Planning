@@ -69,8 +69,10 @@ def main():
 
     logger.info("Pick and Place Simulation Start")
 
+    # default
     arm1_collision = np.empty(3)
     arm2_collision = np.empty(3)
+    slow_arm = 1
    
     #### MAIN LOOP ####
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
@@ -114,15 +116,16 @@ def main():
 
                     # choose whether to speed up arm nearest or furthest to goal
                     # update paths such that speed is inc/dec until collision point only
-                    # new_path1, new_path2 = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
-                    new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
+                    new_path1, new_path2, = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
                 else:
                     # no collision, or reset paths velocities if collision avoided
                     logger.info("NO COLLISION DETECTED!")
                     new_path1, new_path2 = update_velocity(path1, path2, vel=INIT_VEL)
+                    arm1.set_velocity(INIT_VEL)
+                    arm2.set_velocity(INIT_VEL)
                     arm1_collision, arm2_collision = np.empty(3), np.empty(3)
             
-            # set new path and collision point
+            # set new path, collision point, and slow arm bool
             arm1_sm.set_path(new_path1, arm1_collision)
             arm2_sm.set_path(new_path2, arm2_collision)
 

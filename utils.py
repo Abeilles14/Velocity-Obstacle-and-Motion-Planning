@@ -49,9 +49,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
     dist = np.sqrt(xd**2 + yd**2 + zd**2)
     _u = np.cumsum(dist)
     u = np.hstack([[0], _u])
-
     t = quadratic_range(0, u.max()+step, step)
-    print("lengths: {}, {}, {}".format(len(t),len(u),len(x)))
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
@@ -71,7 +69,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
 
 
 def quadratic_range(lb, ub, step):
-    li = LAST_INTERVAL # last interval (min accel)
+    li = 0 # last interval (min accel)
     
     # first, solve equation system to find tf, a, b, c, where tf is the total # of points on new path
     # c = lb
@@ -92,24 +90,30 @@ def quadratic_range(lb, ub, step):
 
     return np.array(arr)
 
-def logarithmic_range(lb, ub, step):
-    li = LAST_INTERVAL
-
+def log_range(lb, ub, step):
+    li = 0.01 # last interval (min accel)
+    
     # first, solve equation system to find a, t, b, c
     # y = logA(t-B) + c
     # y' = 1/(ln(A)*(t-B))
     # choose A by tuning while A>1, start with 1.2 maybe, more gradual decel small A, fast decel big A
-    a = 1.2
-    c = math.log(li*math.log(a, math.e), math.e)/(math.log(a, math.e) + ub)
-    b = 1 - a**(lb - c)
+    # C=LN(li*LN(A))/LN(A)+YN
+    # B = 1 - A^(Y1-C)
+    # tf = a^(lp-c)+b
+
+    a = 4
+    c = (math.log(li*math.log(a))/math.log(a)) + ub
+    b = 1 - a**(step - c)
+    tf = a**(ub-c)+b  # tf = total # of samples
 
     arr = []
-    # for x in range(round(tf)):
-    #     # quadratic equation:
-    #     y = a*x**2 + b*x + c
-    #     arr.append(y)
+    for x in range(round(tf)):
+        # log equation:
+        y = math.log((x-b), a) + c
+        # y = 1/(math.log(a) *(x-b))
+        arr.append(y)
 
-    # return np.array(arr)
+    return np.array(arr)
     
 def isCollisionFreeVertex(obstacles, xy):
     collFree = True
