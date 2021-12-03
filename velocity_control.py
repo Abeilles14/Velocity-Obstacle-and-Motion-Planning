@@ -45,8 +45,8 @@ def find_intersection(path1, path2, arm1, arm2, animate=False):
             intersect_pts1.append([path1[idx1,0], path1[idx1,1], path1[idx1,2]])
             intersect_pts2.append([path2[idx2,0], path2[idx2,1], path2[idx2,2]])
             
-            plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
-            plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
+            # plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='cyan')
+            # plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='cyan')
     
     return (np.array(intersect_pts1), np.array(intersect_pts2))
 

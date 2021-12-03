@@ -178,9 +178,9 @@ def RRTStar(ax, obstacles, start, goal):
     path = shorten_path(path, obstacles, smoothiters=SMOOTH_ITERS)
     path = np.flip(path, axis=0)
 
-    # plot paths
-    for i in range(path.shape[0]-1):
-        ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=1, zorder=15)
+    # # plot paths
+    # for i in range(path.shape[0]-1):
+    #     ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=1, zorder=15)
 
     logger.info('Final Path Found!')
     return path

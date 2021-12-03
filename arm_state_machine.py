@@ -61,6 +61,8 @@ class ArmStateMachine:
         self.check_collisions = True
         self.pause = False
 
+        self.temp_graphics = []
+
         # set first object to pick
 
         logger.debug("ArmStateMachine {}:__init__".format(self.arm.get_name()))
@@ -88,12 +90,21 @@ class ArmStateMachine:
     # if arm not at goal, and compute flag, plan path to next dest
     # returns to main loop after this to check for collisions and adjust path velocity
     def _plan_path(self):
+        # dump previous graphics
+        self.dump_graphics()
+
         # Call RRTS algo to plan and execute path
         logger.info("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
                 logger.info("COMPUTING {} NEW PATH PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
                 rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
+                
+                # draw RRTStar path
+                for i in range(rrts_path.shape[0]-1):
+                    line_plt, = self.ax.plot([rrts_path[i,0], rrts_path[i+1,0]], [rrts_path[i,1], rrts_path[i+1,1]], [rrts_path[i,2], rrts_path[i+1,2]], color = 'orange', linewidth=1, zorder=15)
+                    self.temp_graphics.append(line_plt)
+                
                 sampled_path = linear_interpolation(rrts_path, INIT_VEL)
                 self.path = sampled_path
                 self.compute_path = False   # don't compute path again until destination
@@ -141,12 +152,10 @@ class ArmStateMachine:
     def _drop_object(self):
         logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
         self.pick_ready = True  # get next object to pick in main
-        print("going to main?")
 
     def _drop_object_next(self):
         # set next obj to pick if any
         if self.obj == None:    # if no objects left, go home
-            print("time to go home!")
             self.destination = Goal.HOME
             self.arm.set_destination(self.arm.get_home())
         else:                   # if object, go pick
@@ -177,7 +186,9 @@ class ArmStateMachine:
         self.arm.set_position(self.path[0])
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
 
-        self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
+        point, = self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
+        self.temp_graphics.append(point)
+
         self.path = np.delete(self.path, 0, axis=0)     # delete current point from path
         plt.pause(PAUSE_TIME)
 
@@ -216,8 +227,6 @@ class ArmStateMachine:
                     logger.info("{} Reached Collision Pt {}".format(self.arm.get_name(), self.collision_point))
                     logger.info("Resetting Velocity & Checking Collisions...")
                     self.collision_point = np.empty(3)  # reset collision point when reached
-                    # TODO: fix this
-                    # self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
                     self.check_collisions = True
 
     def set_object(self, obj):
@@ -237,4 +246,13 @@ class ArmStateMachine:
     def set_path(self, path, point=np.empty(3)):
         self.path = path
         self.collision_point = point
+
+    def set_temp_graphics(self, point):
+        self.temp_graphics.append(point)
+
+    def dump_graphics(self):
+        if np.any(self.temp_graphics):
+            for p in self.temp_graphics:
+                p.remove()
         
+        self.temp_graphics = []

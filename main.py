@@ -86,7 +86,6 @@ def main():
         # if arm done picking last obj (full cycle), set next obj
         # get object nearest to each arm and set each arm sm
         if arm1_sm.pick_ready:
-            print("am in main?")
             obj1 = get_nearest_object(objects, arm1.get_position())
             arm1_sm.set_object(obj1)
             if obj1 != None:
@@ -117,6 +116,14 @@ def main():
             # check for other possible collisions
             else:
                 intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
+
+                # plot collision points
+                for col_pt in intersect_pts1:
+                    point, = ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
+                    arm1_sm.set_temp_graphics(point)
+                for col_pt in intersect_pts2:
+                    point, = ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
+                    arm2_sm.set_temp_graphics(point)
 
                 # if collision detected, adjust path velocities
                 if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
