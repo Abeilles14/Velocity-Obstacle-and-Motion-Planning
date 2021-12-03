@@ -23,7 +23,7 @@ from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class ArmState(Enum):
     PLANNING = 0,
@@ -103,7 +103,7 @@ class ArmStateMachine:
                 # draw RRTStar path
                 for i in range(rrts_path.shape[0]-1):
                     line_plt, = self.ax.plot([rrts_path[i,0], rrts_path[i+1,0]], [rrts_path[i,1], rrts_path[i+1,1]], [rrts_path[i,2], rrts_path[i+1,2]], color = 'orange', linewidth=1, zorder=15)
-                    self.temp_graphics.append(line_plt)
+                    self.set_temp_graphics(line_plt)
                 
                 sampled_path = linear_interpolation(rrts_path, INIT_VEL)
                 self.path = sampled_path
@@ -159,7 +159,6 @@ class ArmStateMachine:
             self.destination = Goal.HOME
             self.arm.set_destination(self.arm.get_home())
         else:                   # if object, go pick
-            print("arm {}, OBJ: {}".format(self.arm.get_name(), self.obj.get_name()))
             self.destination = Goal.OBJ
             self.arm.set_destination(self.obj.get_position())
         self.compute_path = True
@@ -171,6 +170,7 @@ class ArmStateMachine:
 
     def _home_next(self):
         if np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
+            self.dump_graphics()
             return ArmState.DONE
         else:
             return ArmState.HOME
@@ -186,11 +186,11 @@ class ArmStateMachine:
         self.arm.set_position(self.path[0])
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
 
-        point, = self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
-        self.temp_graphics.append(point)
+        point, = self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color=self.arm.get_color(), markersize=3)
+        self.set_temp_graphics(point)
 
         self.path = np.delete(self.path, 0, axis=0)     # delete current point from path
-        plt.pause(PAUSE_TIME)
+        # plt.pause(PAUSE_TIME)
 
     def _pause(self):
         # stay at current position, do nothing

@@ -13,7 +13,7 @@ from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ### PARAMETERS ###
 show_RRT = False
@@ -63,10 +63,8 @@ def main():
         pos = obj.get_position()
         ax.scatter3D(pos[0], pos[1], pos[2], color='red', s=100, alpha=0.8)
 
-    arm1 = Arm(name="PSM1", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL)
-    arm2 = Arm(name="PSM2", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=ARM2_HOME_POS, velocity=INIT_VEL)
-    # obj1 = Object(name="OBJ1", arm=arm1, position=OBJ1)
-    # obj2 = Object(name="OBJ2", arm=arm2, position=OBJ2)
+    arm1 = Arm(name="BLUE", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL, color='#57b9fc')
+    arm2 = Arm(name="GREEN", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=ARM2_HOME_POS, velocity=INIT_VEL, color='#3baf4f')
 
     objects = OBJ_LIST
     obj1, obj2 = None, None
@@ -82,7 +80,6 @@ def main():
    
     #### MAIN LOOP ####
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE):
-        
         # if arm done picking last obj (full cycle), set next obj
         # get object nearest to each arm and set each arm sm
         if arm1_sm.pick_ready:
@@ -104,6 +101,18 @@ def main():
         
         path1 = arm1_sm.get_path()  # make sure that paths are already generated
         path2 = arm2_sm.get_path()
+
+        # critical stop if arms in eachother safety zone
+        if euclidean_distance(arm1.get_position(), arm2.get_position()) <= SAFETY_ZONE:
+            if arm1.get_velocity() != INIT_VEL:
+                logger.info("{} CRITICAL STOP!!".format(arm1.get_name()))
+                arm1_sm.pause = True
+            else:
+                logger.info("{} CRITICAL STOP!!".format(arm2.get_name()))
+                arm2_sm.pause = True 
+        else:
+            arm1_sm.pause = False
+            arm2_sm.pause = False
 
         # check for intersection
         if arm1_sm.check_collisions or arm2_sm.check_collisions:
@@ -159,8 +168,11 @@ def main():
             # set new path, collision point, and slow arm bool
             arm1_sm.set_path(new_path1, arm1_collision)
             arm2_sm.set_path(new_path2, arm2_collision)
+        
+        plt.pause(PAUSE_TIME)
 
     logger.info("Pick and Place Simulation End")
+    plt.show()
 
 if __name__ == '__main__':
     main()

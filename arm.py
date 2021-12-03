@@ -1,13 +1,14 @@
 # ARM OBJECT
 
 class Arm:
-    def __init__(self, name, home, position, destination, velocity):
+    def __init__(self, name, home, position, destination, velocity, color='orange'):
         self.name = name
         self.home = home
         self.vel = velocity
         self.pos = position
         self.dest = destination
         self.vel = velocity
+        self.color = color
 
     def get_name(self):
         return self.name
@@ -32,3 +33,6 @@ class Arm:
 
     def set_velocity(self, velocity):
         self.vel = velocity
+
+    def get_color(self):
+        return self.color
