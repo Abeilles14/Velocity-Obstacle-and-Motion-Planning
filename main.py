@@ -81,20 +81,24 @@ def main():
     arm2_collision = np.empty(3)
    
     #### MAIN LOOP ####
-    while (arm1_sm.state != ArmState.HOME) or (arm2_sm.state != ArmState.HOME):
+    while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE):
         
         # if arm done picking last obj (full cycle), set next obj
         # get object nearest to each arm and set each arm sm
         if arm1_sm.pick_ready:
+            print("am in main?")
             obj1 = get_nearest_object(objects, arm1.get_position())
             arm1_sm.set_object(obj1)
-            objects.remove(obj1)
-            logger.info("ASSIGNING {} TO OBJ {}".format(arm1.get_name(), obj1.get_position()))
+            if obj1 != None:
+                objects.remove(obj1)
+                logger.info("ASSIGNING {} TO {}".format(arm1.get_name(), obj1.get_name()))
         if arm2_sm.pick_ready:
             obj2 = get_nearest_object(objects, arm2.get_position())
             arm2_sm.set_object(obj2)
-            objects.remove(obj2)
-            logger.info("ASSIGNING {} TO OBJ {}".format(arm2.get_name(), obj2.get_position()))
+            if obj2 != None:
+                objects.remove(obj2)
+                logger.info("ASSIGNING {} TO {}".format(arm2.get_name(), obj2.get_name()))
+        
 
         arm1_sm.run_once()
         arm2_sm.run_once()
@@ -107,7 +111,7 @@ def main():
             logger.info("Checking Collisions...")
 
             # check if common goal
-            if euclidean_distance(path1[-1,:], path2[-1,:]) <= COLLISION_RANGE:
+            if euclidean_distance(path1[-1], path2[-1]) <= COLLISION_RANGE:
                 logger.info("ARMS MOVING TOWARD COMMON GOAL")
                 new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
             # check for other possible collisions

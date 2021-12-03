@@ -23,7 +23,7 @@ from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class ArmState(Enum):
     PLANNING = 0,
@@ -140,38 +140,21 @@ class ArmStateMachine:
 
     def _drop_object(self):
         logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
-        self.pick_ready = True  # get next object to pick
+        self.pick_ready = True  # get next object to pick in main
+        print("going to main?")
 
     def _drop_object_next(self):
+        # set next obj to pick if any
         if self.obj == None:    # if no objects left, go home
+            print("time to go home!")
             self.destination = Goal.HOME
             self.arm.set_destination(self.arm.get_home())
         else:                   # if object, go pick
+            print("arm {}, OBJ: {}".format(self.arm.get_name(), self.obj.get_name()))
             self.destination = Goal.OBJ
             self.arm.set_destination(self.obj.get_position())
         self.compute_path = True
         return ArmState.PLANNING
-
-        # pick ready true??
-
-        # elif len(self.world.objects) > 0:
-        #     # there are objects left, find one and go to APPROACH_OBJECT
-        #     closest_object = None
-        #     if self.pick_closest_to_base_frame:
-        #         # closest object to base frame
-        #         closest_object = min(self.world.objects,
-        #                             key=lambda obj : (self.world_to_psm_tf * obj.pos).Norm())
-        #     else:
-        #         # closest object to current position, only if we're running 
-        #         closest_object = min(self.world.objects,
-        #                             key=lambda obj : (self.world_to_psm_tf * obj.pos \
-        #                                             - self.psm.get_current_position().p).Norm())
-        #     self.object = closest_object
-        #     return PickAndPlaceState.APPROACH_OBJECT
-        # else:
-        #     return PickAndPlaceState.HOME
-
-        # return PickAndPlaceState.DROP_OBJECT
 
     def _home(self):
         logger.debug("{} APROACHING HOME at {}".format(self.arm.get_name(), self.arm.get_home()))
@@ -184,22 +167,14 @@ class ArmStateMachine:
             return ArmState.HOME
 
     def _done(self):
+        self.path = np.array([self.arm.get_position()])
         return ArmState.DONE
 
-    # def halt(self):
-    #     # this sets the desired joint position to the current joint position
-    #     self._set_arm_dest(self.arm.get_position(), blocking=False)
-
-    # def is_done(self):
-    #     if self.home_when_done:
-    #         return self.state == ArmState.HOME
-    #     else:
-    #         return self.state == ArmState.DONE
     ### END STATE FUNCTIONS ###
 
     # set arm position and plot
     def _execute_path(self):
-        self.arm.set_position(np.array(self.path[0]))
+        self.arm.set_position(self.path[0])
         logger.debug("{} Position: {}".format(self.arm.get_name(), self.arm.get_position()))
 
         self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color='orange', markersize=3)
@@ -211,20 +186,8 @@ class ArmStateMachine:
         self.arm.set_position(np.array(self.path[0]))
         logger.debug("{} pausing at: {}".format(self.arm.get_name(), self.arm.get_position()))
 
-    # def is_done(self):
-    #     # if picked up all objects, go home, else done cycle, wait to get called again
-    #     if self.home_when_done:
-    #         # return true if state = HOME and arm is at home, else false
-    #         return self.state == ArmState.HOME and np.isclose(self.arm.get_position(), self.arm.get_home(), atol=ABS_TOLERANCE).all()
-    #     else:
-    #         # done sm cycle, return to main
-    #         return self.state == ArmState.DONE
-
     def run_once(self):
-        logger.debug("Running state {}".format(self.state))
-        
-        # if self.is_done():
-        #     return
+        logger.debug("{} Running state {}".format(self.arm.get_name(), self.state))
 
         # decide whether to check collisions in main after executing current state
         if self.state == ArmState.PLANNING:
@@ -260,7 +223,13 @@ class ArmStateMachine:
     def set_object(self, obj):
         self.obj = obj
         self.pick_ready = False
-        self.arm.set_destination(self.obj.get_position())
+        if self.obj != None:
+            self.arm.set_destination(self.obj.get_position())
+            self.destination = Goal.OBJ
+        else:
+            print("go home!")
+            self.arm.set_destination(self.arm.get_home())
+            self.destination = Goal.HOME
 
     def get_path(self):
         return self.path

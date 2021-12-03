@@ -47,7 +47,7 @@ OBSTACLE_DIMS  = [[5.0, 3.0, 0.3]]
 INIT_VEL = 0.08
 INC_VEL = 0.08
 ABS_TOLERANCE = 0.055
-COLLISION_RANGE = 0.5
+COLLISION_RANGE = 0.3 # 0.5 causes problems when going towards/away from common point
 SAFETY_ZONE = 0.1
 LAST_INTERVAL = 0.0005
 
