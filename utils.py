@@ -1,12 +1,34 @@
 import numpy as np
-from matplotlib.patches import Polygon
-from scipy.spatial import ConvexHull
 from matplotlib import path
 import matplotlib.pyplot as plt
 from numpy.linalg import norm
 import math
 
 from constants import LAST_INTERVAL
+
+def get_objects_for_arms(self, objects, arm_positions):
+        '''
+        Returns a dict of PSM index -> list of objects that are closest to that PSM
+        '''
+        result = dict()  # format: {0: [obj1, obj4], 1: [obj2, obj3]}
+        for obj in objects:
+            # find psm closest to obj, returns 0 or 1
+            closest_arm_idx = arm_positions.index(
+                min(arm_positions, key=lambda pos : (pos * obj).Norm()))
+            
+            if closest_arm_idx not in result:
+                result[closest_arm_idx] = list()
+            
+            result[closest_arm_idx].append(obj)
+
+        return result
+
+def get_nearest_object(objects, arm_position):
+    if not np.any(objects):
+        return None
+
+    closest_object = min(objects, key=lambda obj : norm((arm_position * obj.get_position())))
+    return closest_object        
 
 # Convert xyz-data to a parametrized curve
 # calculate all distances between the points

@@ -1,10 +1,11 @@
+import numpy as np
+
 # PICK AND PLACE OBJECTS
 
 class Object:
-    def __init__(self, name, arm, position):
+    def __init__(self, name, position):
         self.name = name
-        self.arm = arm
-        self.pos = position
+        self.pos = np.array(position)
 
     def get_name(self):
         return self.name

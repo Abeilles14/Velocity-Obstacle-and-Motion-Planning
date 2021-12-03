@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from math import *
 from matplotlib import pyplot as plt
-from utils import init_fonts
+from utils import init_fonts, get_nearest_object
 from obstacles import Table
 from objects import Object
 from arm import Arm
@@ -54,15 +54,23 @@ def main():
     ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=800)
     # TODO: put in pick_and_place sm ?
     ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100, alpha=0.8)
-    ax.scatter3D(OBJ1[0], OBJ1[1], OBJ1[2], color='#99ccff', s=100, alpha=0.8)
+    # ax.scatter3D(OBJ1[0], OBJ1[1], OBJ1[2], color='#99ccff', s=100, alpha=0.8)
 
     ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100, alpha=0.8)
-    ax.scatter3D(OBJ2[0], OBJ2[1], OBJ2[2], color='#99ff99', s=100, alpha=0.8)
+    # ax.scatter3D(OBJ2[0], OBJ2[1], OBJ2[2], color='#99ff99', s=100, alpha=0.8)
 
-    arm1 = Arm(name="PSM1", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=OBJ1, velocity=INIT_VEL)
-    arm2 = Arm(name="PSM2", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=OBJ2, velocity=INIT_VEL)
-    obj1 = Object(name="OBJ1", arm=arm1, position=OBJ1)
-    obj2 = Object(name="OBJ2", arm=arm2, position=OBJ2)
+    for obj in OBJ_LIST:
+        pos = obj.get_position()
+        ax.scatter3D(pos[0], pos[1], pos[2], color='red', s=100, alpha=0.8)
+
+    arm1 = Arm(name="PSM1", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL)
+    arm2 = Arm(name="PSM2", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=ARM2_HOME_POS, velocity=INIT_VEL)
+    # obj1 = Object(name="OBJ1", arm=arm1, position=OBJ1)
+    # obj2 = Object(name="OBJ2", arm=arm2, position=OBJ2)
+
+    objects = OBJ_LIST
+    obj1, obj2 = None, None
+
     arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
     arm2_sm = ArmStateMachine(ax, obstacles, arm2, obj2, BOWL)
 
@@ -73,7 +81,21 @@ def main():
     arm2_collision = np.empty(3)
    
     #### MAIN LOOP ####
-    while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE): #should be HOME
+    while (arm1_sm.state != ArmState.HOME) or (arm2_sm.state != ArmState.HOME):
+        
+        # if arm done picking last obj (full cycle), set next obj
+        # get object nearest to each arm and set each arm sm
+        if arm1_sm.pick_ready:
+            obj1 = get_nearest_object(objects, arm1.get_position())
+            arm1_sm.set_object(obj1)
+            objects.remove(obj1)
+            logger.info("ASSIGNING {} TO OBJ {}".format(arm1.get_name(), obj1.get_position()))
+        if arm2_sm.pick_ready:
+            obj2 = get_nearest_object(objects, arm2.get_position())
+            arm2_sm.set_object(obj2)
+            objects.remove(obj2)
+            logger.info("ASSIGNING {} TO OBJ {}".format(arm2.get_name(), obj2.get_position()))
+
         arm1_sm.run_once()
         arm2_sm.run_once()
         

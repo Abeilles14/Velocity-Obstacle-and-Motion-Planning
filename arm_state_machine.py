@@ -53,6 +53,7 @@ class ArmStateMachine:
         self.home_when_done = home_when_done
         self.path = []
         self.compute_path = True
+        self.pick_ready = True
         self.collision_point = np.empty(3)
 
         self.state = ArmState.PLANNING
@@ -60,8 +61,9 @@ class ArmStateMachine:
         self.check_collisions = True
         self.pause = False
 
-        logger.debug("ArmStateMachine:__init__")
-        logger.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
+        # set first object to pick
+
+        logger.debug("ArmStateMachine {}:__init__".format(self.arm.get_name()))
 
         self.state_functions = {
             ArmState.PLANNING: self._plan_path,
@@ -138,12 +140,19 @@ class ArmStateMachine:
 
     def _drop_object(self):
         logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
+        self.pick_ready = True  # get next object to pick
 
     def _drop_object_next(self):
-        self.destination = Goal.HOME
+        if self.obj == None:    # if no objects left, go home
+            self.destination = Goal.HOME
+            self.arm.set_destination(self.arm.get_home())
+        else:                   # if object, go pick
+            self.destination = Goal.OBJ
+            self.arm.set_destination(self.obj.get_position())
         self.compute_path = True
-        self.arm.set_destination(self.arm.get_home())
         return ArmState.PLANNING
+
+        # pick ready true??
 
         # elif len(self.world.objects) > 0:
         #     # there are objects left, find one and go to APPROACH_OBJECT
@@ -202,10 +211,21 @@ class ArmStateMachine:
         self.arm.set_position(np.array(self.path[0]))
         logger.debug("{} pausing at: {}".format(self.arm.get_name(), self.arm.get_position()))
 
+    # def is_done(self):
+    #     # if picked up all objects, go home, else done cycle, wait to get called again
+    #     if self.home_when_done:
+    #         # return true if state = HOME and arm is at home, else false
+    #         return self.state == ArmState.HOME and np.isclose(self.arm.get_position(), self.arm.get_home(), atol=ABS_TOLERANCE).all()
+    #     else:
+    #         # done sm cycle, return to main
+    #         return self.state == ArmState.DONE
 
     def run_once(self):
         logger.debug("Running state {}".format(self.state))
         
+        # if self.is_done():
+        #     return
+
         # decide whether to check collisions in main after executing current state
         if self.state == ArmState.PLANNING:
             self.check_collisions = True
@@ -236,6 +256,11 @@ class ArmStateMachine:
                     # TODO: fix this
                     # self.state = ArmState.PLANNING      # recheck collisions and reset path velocity
                     self.check_collisions = True
+
+    def set_object(self, obj):
+        self.obj = obj
+        self.pick_ready = False
+        self.arm.set_destination(self.obj.get_position())
 
     def get_path(self):
         return self.path

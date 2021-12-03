@@ -1,6 +1,7 @@
 # PROGRAM CONSTANTS AND PARAMETERS
 import numpy as np
 from enum import Enum
+from objects import Object
 
 # clearly i didn't spend much time thinking about how to structure this program
 
@@ -25,8 +26,17 @@ class Interpolate(Enum):
 ARM1_HOME_POS = np.array([0.0, 1.0, 3.0])
 ARM2_HOME_POS = np.array([0.0, -1.0, 3.0])
 
-OBJ2 = np.array([0.0, 1.0, 0.35])
-OBJ1 = np.array([-0.5, -1.0, 0.35])
+# OBJECTS
+OBJ1 = Object(name="OBJ1", position=[-0.5, -1.0, 0.35])
+OBJ2 = Object(name="OBJ2", position=[0.0, 1.0, 0.35])
+OBJ3 = Object(name="OBJ3", position=[-2, -1.0, 0.35])
+OBJ4 = Object(name="OBJ4", position=[1, -1.0, 0.35])
+
+# OBJ2 = np.array([0.0, 1.0, 0.35])
+# OBJ1 = np.array([-0.5, -1.0, 0.35])
+# OBJ_LIST = np.array([[0.0, 1.0, 0.35], [-0.5, -1.0, 0.35], [-2, -1.0, 0.35], [1, -1.0, 0.35]])
+OBJ_LIST = [OBJ1, OBJ2, OBJ3, OBJ4]
+
 BOWL =  np.array([2, 0.0, 0.4])
 
 # obstacles_poses = [[-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5]]
