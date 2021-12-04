@@ -50,6 +50,7 @@ LAST_INTERVAL = 0.0005
 
 PAUSE_TIME = 0.0005
 
+PICKING_DELAY = 10
 
 ####################
 # PROGRAM PARAMS

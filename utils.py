@@ -45,9 +45,9 @@ def linear_interpolation(P, step, show_interplot=False):
 
     # for const speed:
     t = np.arange(0, u.max()+step, step)
-    # TODO: fix crash here, NOTE: u MUST be same len as x
-    print("Path: {}".format(P))
-    print("lengths: {}, {}, {}".format(len(t), len(u), len(x))) 
+    # u must be same len as x
+    # print("Path: {}".format(P))
+    # print("lengths: {}, {}, {}".format(len(t), len(u), len(x))) 
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)

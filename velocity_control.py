@@ -67,9 +67,8 @@ def update_velocity(p_fast, p_slow, vel, idx_fast=None, idx_slow=None):
     else:
         # choose whether to speed up arm nearest or furthest to goal
         # speed up arm to a constant velocity
-        # TODO: fix crash here
-        print("fast path: {}".format(p_fast))
-        print("fast_path indexed: {}".format(p_fast[:idx_fast+1,:]))
+        logger.debug("fast path: {}".format(p_fast))
+        logger.debug("fast_path indexed: {}".format(p_fast[:idx_fast+1,:]))
         new_col_fast_path = linear_interpolation(p_fast[:idx_fast+1,:], vel)    # interpolate until collision pt 2
         new_col_slow_path = nonlinear_interpolation(p_slow[:idx_slow+1,:], INIT_VEL)
 
@@ -113,8 +112,6 @@ def adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2):
         # if arm1 goal nearer to arm2 than arm2 goal nearer to arm1, slow arm1
         if euclidean_distance(arm1.get_position(), arm2.get_destination()) >= euclidean_distance(arm2.get_position(), arm1.get_destination()):
             arm1.set_velocity(0)
-            # TODO: fix crash here
-            print("arm blue goal (bowl) nearer to arm green, slow arm blue")
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
             logger.info("DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
         else:  # if arm1 goal further from arm2 than arm2 goal further from to arm1, slow arm2
