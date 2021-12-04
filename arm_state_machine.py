@@ -130,7 +130,7 @@ class ArmStateMachine:
             return ArmState.APPROACH_OBJECT
     
     def _grab_object(self):
-        logger.debug("{} GRABBING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
+        logger.info("{} GRABBED {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
 
     # set next destination and compute path flag, next planning state
     def _grab_object_next(self):
@@ -150,7 +150,7 @@ class ArmStateMachine:
             return ArmState.APPROACH_DEST 
 
     def _drop_object(self):
-        logger.debug("{} DROPPING {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
+        logger.info("{} DROPPED {} at ".format(self.arm.get_name(), self.obj.get_name(), self.bowl))
         self.pick_ready = True  # get next object to pick in main
 
     def _drop_object_next(self):

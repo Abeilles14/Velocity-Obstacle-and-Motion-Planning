@@ -117,11 +117,21 @@ def main():
         # check for intersection
         if arm1_sm.check_collisions or arm2_sm.check_collisions:
             logger.info("Checking Collisions...")
+            
+            # if one arm's path not computed, simply use current pos to compare
+            if path1.shape[0] == 0: path1 = np.array([arm1.get_position()])
+            if path2.shape[0] == 0: path2 = np.array([arm2.get_position()])
 
             # check if common goal
             if euclidean_distance(path1[-1], path2[-1]) <= COLLISION_RANGE:
-                logger.info("ARMS MOVING TOWARD COMMON GOAL")
+                logger.info("ARMS MOVING TOWARD COMMON GOAL {}, {}".format(path1[-1], path2[-1]))
+                point = ax.scatter3D(path1[-1,0], path1[-1,1], path1[-1,2], color='cyan', s=100)
+                arm1_sm.set_temp_graphics(point)
+                point = ax.scatter3D(path2[-1,0], path2[-1,1], path2[-1,2], color='cyan', s=100)
+                arm2_sm.set_temp_graphics(point)
+                
                 new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
+                # new_path1, new_path2 = update_velocity(path1, path2, vel=INIT_VEL)
             # check for other possible collisions
             else:
                 intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
@@ -156,6 +166,7 @@ def main():
 
                     # choose whether to speed up arm nearest or furthest to goal
                     # update paths such that speed is inc/dec until collision point only
+                    # TODO: fix crashing here
                     new_path1, new_path2, = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
                 else:
                     # no collision, or reset paths velocities if collision avoided
