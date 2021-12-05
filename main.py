@@ -102,15 +102,20 @@ def main():
         arm1_sm.run_once()
         arm2_sm.run_once()
 
-        # if stop count > 5, possible deadlock, share eachother's positions
-        if arm1_sm.stop_count > 5 or arm1_sm.stop_count > 5:
-            arm1_sm.get_other_arm_pos(arm2.get_position())
-            arm2_sm.get_other_arm_pos(arm1.get_position())
-        
+        # if stop count > 8, possible deadlock, share eachother's positions
+        if arm1_sm.get_stop_count() > 8 or arm2_sm.get_stop_count() > 8:
+            logger.info("ARM CURRENT POSITIONS: {}, {}".format(arm1.get_position(), arm2.get_position()))
+            logger.info("ARM CURRENT DIST: {}".format(euclidean_distance(arm1.get_position(), arm2.get_position())))
+            arm1_sm.set_other_arm_pos(arm2.get_position())
+            arm2_sm.set_other_arm_pos(arm1.get_position())
+            ax.scatter3D(arm1.get_position()[0], arm1.get_position()[1], arm1.get_position()[2], color='blue', s=50)
+            ax.scatter3D(arm2.get_position()[0], arm2.get_position()[1], arm2.get_position()[2], color='green', s=50)
+
         path1 = arm1_sm.get_path()  # make sure that paths are already generated
         path2 = arm2_sm.get_path()
 
         # critical stop if arms in eachother safety zone
+        # TODO: delete? not needed?
         if euclidean_distance(arm1.get_position(), arm2.get_position()) <= SAFETY_ZONE:
             if arm1.get_velocity() != INIT_VEL:
                 logger.info("{} CRITICAL STOP!!".format(arm1.get_name()))
@@ -139,8 +144,7 @@ def main():
                 arm2_sm.set_temp_graphics(point)
                 
                 new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
-                # new_path1, new_path2 = update_velocity(path1, path2, vel=INIT_VEL)
-            # check for other possible collisions
+            # check for possible collisions
             else:
                 intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
 

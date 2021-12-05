@@ -11,6 +11,7 @@ import time
 from mpl_toolkits import mplot3d
 from enum import Enum
 import logging
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 
 from RRTStar import RRTStar
 from path_shortening import shorten_path
@@ -24,7 +25,7 @@ from utils import add_obstacle
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class ArmState(Enum):
     PLANNING = 0,
@@ -103,7 +104,7 @@ class ArmStateMachine:
             if self.compute_path:
                 logger.info("COMPUTING {} NEW PATH PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
                 rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
-                
+
                 # draw RRTStar path
                 for i in range(rrts_path.shape[0]-1):
                     line_plt, = self.ax.plot([rrts_path[i,0], rrts_path[i+1,0]], [rrts_path[i,1], rrts_path[i+1,1]], [rrts_path[i,2], rrts_path[i+1,2]], color = 'orange', linewidth=1, zorder=15)
@@ -214,26 +215,29 @@ class ArmStateMachine:
         if self.arm.get_velocity() != INIT_VEL and euclidean_distance(self.collision_point, self.path[0]) <= SAFETY_ZONE:
             logger.info("{} EMERGENCY STOP!!".format(self.arm.get_name()))
             self.pause = True
-            self.stop_count += 1
-            if self.stop_count >= 8:
-                logger.info("OH NO, WE HAVE A DEADLOCK!")
-                logger.info("Replanning {} Path".format(self.arm.get_name()))
+
+            if self.stop_count > 8:
+                logger.info("OH NO, WE HAVE A DEADLOCK!! >:(")
                 
+                logger.info("Setting Temp Obstacle at: {}".format(self.other_arm_pos))
                 # stop count checked in main, other arm pos shared, set other arm as an obstacle
                 # create temp obstacle box around other arm:
-                self.obstacles = add_obstacle(self.obstacles, pose=self.other_arm_pos, dim=ARM_DIMS)
-                # for obstacle in obstacles: obstacle.draw(ax)
+                self.obstacles = add_obstacle(self.obstacles, pose=self.other_arm_pos.tolist(), dim=ARM_DIMS)
+                self.obstacles[-1].draw(self.ax)
 
-                # go back to planning and plan new path
+                # reset flags to go back to planning and plan new path
                 self.state = ArmState.PLANNING
                 self.compute_path = True
+                self.pause = False
 
-                # self.stop_count = 0
+                self.stop_count = 0
+            self.stop_count += 1
         else:
             self.pause = False
-            # if previously deadlocked, remove temp arm obstacle and reset count
-            if self.stop_count >= 8:
-                self.obstacles.pop()
+            # if previously deadlocked, reset conditions
+            if self.stop_count > 8:
+                print("REMOVE OBSTACLE")
+                self.obstacles.pop()    # remove temp arm obstacle
                 self.stop_count = 0
 
         # if pause flag, pause arm movement, don't update state or pos
@@ -248,7 +252,7 @@ class ArmStateMachine:
                 # if at final collision point, go back into planning state to recheck collisions
                 if (self.arm.get_position() == self.collision_point).all():
                     logger.info("{} Reached Collision Pt {}".format(self.arm.get_name(), self.collision_point))
-                    logger.info("Resetting Velocity & Checking Collisions...")
+                    logger.info("{} Resetting Velocity & Checking Collisions...".format(self.arm.get_name()))
                     self.collision_point = np.empty(3)  # reset collision point when reached
                     self.check_collisions = True
 
@@ -259,7 +263,6 @@ class ArmStateMachine:
             self.arm.set_destination(self.obj.get_position())
             self.destination = Goal.OBJ
         else:
-            print("go home!")
             self.arm.set_destination(self.arm.get_home())
             self.destination = Goal.HOME
 
@@ -270,8 +273,11 @@ class ArmStateMachine:
         self.path = path
         self.collision_point = point
 
-    def get_other_arm_pos(self, pos):
+    def set_other_arm_pos(self, pos):
         self.other_arm_pos = pos
+
+    def get_stop_count(self):
+        return self.stop_count
 
     def set_temp_graphics(self, point):
         self.temp_graphics.append(point)

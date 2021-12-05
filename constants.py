@@ -40,12 +40,12 @@ BOWL =  np.array([-1, 0.0, 0.6])
 
 OBSTACLE_POSES = [[0, 0, 0]]
 OBSTACLE_DIMS  = [[3.9776, 5.5616, 0.3]]    # table dimensions: 0.39776, 0.55616, 0.08 (m)
-ARM_DIMS = [0.1, 0.1, 0.1]
+ARM_DIMS = [0.2, 0.2, 0.2]
 
-INIT_VEL = 0.15
-INC_VEL = 0.15
+INIT_VEL = 0.05
+INC_VEL = 0.05
 ABS_TOLERANCE = 0.055
-COLLISION_RANGE = 0.3 # 0.4-0.5 causes problems when going towards/away from common point
+COLLISION_RANGE = 0.3 # usually 0.3-0.5
 SAFETY_ZONE = 0.1
 LAST_INTERVAL = 0.0005
 
