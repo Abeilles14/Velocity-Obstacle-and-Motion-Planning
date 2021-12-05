@@ -60,6 +60,7 @@ def main():
     mngr.window.wm_geometry("+500+0")
 
     ### SET UP STATIC OBSTACLES AND BOWL ###
+    temp_obstacles = []
     obstacles = []
     for pose, dim in zip(OBSTACLE_POSES, OBSTACLE_DIMS):
         obstacles = add_obstacle(obstacles, pose, dim)
@@ -103,13 +104,29 @@ def main():
         arm2_sm.run_once()
 
         # if stop count > 8, possible deadlock, share eachother's positions
-        if arm1_sm.get_stop_count() > 8 or arm2_sm.get_stop_count() > 8:
-            logger.info("ARM CURRENT POSITIONS: {}, {}".format(arm1.get_position(), arm2.get_position()))
-            logger.info("ARM CURRENT DIST: {}".format(euclidean_distance(arm1.get_position(), arm2.get_position())))
-            arm1_sm.set_other_arm_pos(arm2.get_position())
-            arm2_sm.set_other_arm_pos(arm1.get_position())
-            ax.scatter3D(arm1.get_position()[0], arm1.get_position()[1], arm1.get_position()[2], color='blue', s=50)
-            ax.scatter3D(arm2.get_position()[0], arm2.get_position()[1], arm2.get_position()[2], color='green', s=50)
+        if arm1_sm.stop_count > 5 or arm2_sm.stop_count > 5:
+            logger.info("OH NO, WE HAVE A DEADLOCK!! >:(")
+
+            # make fast arm replan path
+            if arm1.get_velocity() != INIT_VEL:
+                arm2_sm.state = ArmState.PLANNING
+                arm2_sm.compute_path = True
+                slow_arm_pos = arm1.get_position()
+            elif arm2.get_velocity() != INIT_VEL:
+                arm1_sm.state = ArmState.PLANNING
+                arm1_sm.compute_path = True
+                slow_arm_pos = arm2.get_position()
+
+            # create temp obstacle box around slow arm:
+            logger.info("Setting Temp Obstacle at: {}".format(slow_arm_pos))
+            
+            obstacles = add_obstacle(obstacles, pose=slow_arm_pos, dim=ARM_DIMS)
+            temp_obstacles.append(obstacles[-1])
+            # obstacles[-1].draw(ax)
+            
+            # reset stop counts
+            arm1_sm.stop_count = 0
+            arm2_sm.stop_count = 0
 
         path1 = arm1_sm.get_path()  # make sure that paths are already generated
         path2 = arm2_sm.get_path()
@@ -186,6 +203,11 @@ def main():
                     arm1.set_velocity(INIT_VEL)
                     arm2.set_velocity(INIT_VEL)
                     arm1_collision, arm2_collision = np.empty(3), np.empty(3)
+
+                    # if previously deadlocked, remove temp obstacles
+                    for obstacle in temp_obstacles:
+                        obstacles.remove(obstacle)
+                    temp_obstacles = []
             
             # set new path, collision point, and slow arm bool
             arm1_sm.set_path(new_path1, arm1_collision)

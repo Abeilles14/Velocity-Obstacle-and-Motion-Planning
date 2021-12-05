@@ -6,7 +6,7 @@ import math
 
 from obstacles import Static_Obstacle
 
-from constants import LAST_INTERVAL
+from constants import LAST_INTERVAL, MULTIPLIER
 
 def add_obstacle(obstacles, pose, dim):
 	obstacle = Static_Obstacle()
@@ -149,10 +149,10 @@ def log_range(lb, ub, step):
     return np.array(arr)
 
 def natural_range(lb, ub, step):
-    li = 0.0005 # last interval (min accel)
+    li = LAST_INTERVAL # last interval (min accel)
     
     # first, solve equation system to find k, t, tf
-    mult = 0.01866  # 1.866 %
+    mult = MULTIPLIER  # 1.866 %
     k = ub*(1+mult)
     t = -1/math.log(1-step/k)
     tf = math.log(1-ub/k)*(-t)

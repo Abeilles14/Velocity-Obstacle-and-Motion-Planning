@@ -194,6 +194,8 @@ class ArmStateMachine:
         point, = self.ax.plot(self.path[0,0], self.path[0,1], self.path[0,2], 'o', color=self.arm.get_color(), markersize=3)
         self.set_temp_graphics(point)
 
+        # print("current pos: {}".format(self.arm.get_position()))
+
         self.path = np.delete(self.path, 0, axis=0)     # delete current point from path
         # plt.pause(PAUSE_TIME)
 
@@ -212,34 +214,13 @@ class ArmStateMachine:
             self.check_collisions = False
 
         # emergency stop if slow arm reaches dist from collision pt before regular arm
+        # didn't spend much time on writing good code here
         if self.arm.get_velocity() != INIT_VEL and euclidean_distance(self.collision_point, self.path[0]) <= SAFETY_ZONE:
-            logger.info("{} EMERGENCY STOP!!".format(self.arm.get_name()))
+            logger.info("{} EMERGENCY STOP AT {}!!".format(self.arm.get_name(), self.arm.get_position()))
+            logger.info("STOP COUNT: {}".format(self.stop_count))
             self.pause = True
-
-            if self.stop_count > 8:
-                logger.info("OH NO, WE HAVE A DEADLOCK!! >:(")
-                
-                logger.info("Setting Temp Obstacle at: {}".format(self.other_arm_pos))
-                # stop count checked in main, other arm pos shared, set other arm as an obstacle
-                # create temp obstacle box around other arm:
-                self.obstacles = add_obstacle(self.obstacles, pose=self.other_arm_pos.tolist(), dim=ARM_DIMS)
-                self.obstacles[-1].draw(self.ax)
-
-                # reset flags to go back to planning and plan new path
-                self.state = ArmState.PLANNING
-                self.compute_path = True
-                self.pause = False
-
-                self.stop_count = 0
-            self.stop_count += 1
-        else:
-            self.pause = False
-            # if previously deadlocked, reset conditions
-            if self.stop_count > 8:
-                print("REMOVE OBSTACLE")
-                self.obstacles.pop()    # remove temp arm obstacle
-                self.stop_count = 0
-
+            self.stop_count += 1    # this gets reset in main, deal with it
+        
         # if pause flag, pause arm movement, don't update state or pos
         if self.pause:
             self._pause()
@@ -272,12 +253,6 @@ class ArmStateMachine:
     def set_path(self, path, point=np.empty(3)):
         self.path = path
         self.collision_point = point
-
-    def set_other_arm_pos(self, pos):
-        self.other_arm_pos = pos
-
-    def get_stop_count(self):
-        return self.stop_count
 
     def set_temp_graphics(self, point):
         self.temp_graphics.append(point)

@@ -28,9 +28,9 @@ ARM1_HOME_POS = np.array([0.0, 1.0, 3.0])
 ARM2_HOME_POS = np.array([0.0, -1.0, 3.0])
 
 # OBJECTS
-OBJ1 = Object(name="OBJ1", position=[0.0, -1.0, 0.33])
-OBJ2 = Object(name="OBJ2", position=[0.0, 0.0, 0.33])
-OBJ3 = Object(name="OBJ3", position=[1.5, 1.0, 0.33])
+OBJ1 = Object(name="OBJ1", position=[0.0, -1.8, 0.33])
+OBJ2 = Object(name="OBJ2", position=[0.5, 0.0, 0.33])
+OBJ3 = Object(name="OBJ3", position=[1.5, 1.8, 0.33])
 OBJ4 = Object(name="OBJ4", position=[1.0, -2.0, 0.33])
 
 OBJ_LIST = [OBJ1, OBJ2, OBJ3, OBJ4]
@@ -40,14 +40,15 @@ BOWL =  np.array([-1, 0.0, 0.6])
 
 OBSTACLE_POSES = [[0, 0, 0]]
 OBSTACLE_DIMS  = [[3.9776, 5.5616, 0.3]]    # table dimensions: 0.39776, 0.55616, 0.08 (m)
-ARM_DIMS = [0.2, 0.2, 0.2]
+ARM_DIMS = [0.7, 0.7, 0.7]
 
-INIT_VEL = 0.05
-INC_VEL = 0.05
+INIT_VEL = 0.1
+INC_VEL = 0.1
 ABS_TOLERANCE = 0.055
 COLLISION_RANGE = 0.3 # usually 0.3-0.5
-SAFETY_ZONE = 0.1
+SAFETY_ZONE = 0.2
 LAST_INTERVAL = 0.0005
+MULTIPLIER = 0.01 #0.01866  # higher % = slower change
 
 PAUSE_TIME = 0.0005
 
