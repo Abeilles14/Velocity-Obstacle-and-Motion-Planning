@@ -4,7 +4,16 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 import math
 
+from obstacles import Static_Obstacle
+
 from constants import LAST_INTERVAL
+
+def add_obstacle(obstacles, pose, dim):
+	obstacle = Static_Obstacle()
+	obstacle.dimensions = dim
+	obstacle.pose = pose
+	obstacles.append(obstacle)
+	return obstacles
 
 def get_objects_for_arms(self, objects, arm_positions):
         '''

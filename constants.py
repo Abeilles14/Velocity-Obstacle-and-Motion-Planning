@@ -28,23 +28,24 @@ ARM1_HOME_POS = np.array([0.0, 1.0, 3.0])
 ARM2_HOME_POS = np.array([0.0, -1.0, 3.0])
 
 # OBJECTS
-OBJ1 = Object(name="OBJ1", position=[-0.5, -1.0, 0.35])
-OBJ2 = Object(name="OBJ2", position=[0.0, 1.0, 0.35])
-OBJ3 = Object(name="OBJ3", position=[-2, -1.0, 0.35])
-OBJ4 = Object(name="OBJ4", position=[1, -1.0, 0.35])
+OBJ1 = Object(name="OBJ1", position=[0.0, -1.0, 0.33])
+OBJ2 = Object(name="OBJ2", position=[0.0, 0.0, 0.33])
+OBJ3 = Object(name="OBJ3", position=[1.5, 1.0, 0.33])
+OBJ4 = Object(name="OBJ4", position=[1.0, -2.0, 0.33])
 
 OBJ_LIST = [OBJ1, OBJ2, OBJ3, OBJ4]
 
-BOWL =  np.array([2, 0.0, 0.4])
+BOWL =  np.array([-1, 0.0, 0.6])
 
 
 OBSTACLE_POSES = [[0, 0, 0]]
-OBSTACLE_DIMS  = [[5.0, 3.0, 0.3]]
+OBSTACLE_DIMS  = [[3.9776, 5.5616, 0.3]]    # table dimensions: 0.39776, 0.55616, 0.08 (m)
+ARM_DIMS = [0.1, 0.1, 0.1]
 
-INIT_VEL = 0.08
-INC_VEL = 0.08
+INIT_VEL = 0.15
+INC_VEL = 0.15
 ABS_TOLERANCE = 0.055
-COLLISION_RANGE = 0.4 # 0.4-0.5 causes problems when going towards/away from common point
+COLLISION_RANGE = 0.3 # 0.4-0.5 causes problems when going towards/away from common point
 SAFETY_ZONE = 0.1
 LAST_INTERVAL = 0.0005
 

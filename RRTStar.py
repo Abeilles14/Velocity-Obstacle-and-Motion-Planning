@@ -14,7 +14,7 @@ import logging
 
 from utils import init_fonts
 from path_shortening import shorten_path
-from obstacles import Table
+from obstacles import Static_Obstacle
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()

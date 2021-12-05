@@ -14,11 +14,12 @@ import logging
 
 from RRTStar import RRTStar
 from path_shortening import shorten_path
-from obstacles import Table
+from obstacles import Static_Obstacle
 from arm import Arm
 from objects import Object
 from velocity_control import linear_interpolation, euclidean_distance
 from constants import *
+from utils import add_obstacle
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,9 @@ class ArmStateMachine:
         self.pause = False
 
         self.temp_graphics = []
+
+        self.stop_count = 0
+        self.other_arm_pos = None
 
         # set first object to pick
 
@@ -210,8 +214,27 @@ class ArmStateMachine:
         if self.arm.get_velocity() != INIT_VEL and euclidean_distance(self.collision_point, self.path[0]) <= SAFETY_ZONE:
             logger.info("{} EMERGENCY STOP!!".format(self.arm.get_name()))
             self.pause = True
+            self.stop_count += 1
+            if self.stop_count >= 8:
+                logger.info("OH NO, WE HAVE A DEADLOCK!")
+                logger.info("Replanning {} Path".format(self.arm.get_name()))
+                
+                # stop count checked in main, other arm pos shared, set other arm as an obstacle
+                # create temp obstacle box around other arm:
+                self.obstacles = add_obstacle(self.obstacles, pose=self.other_arm_pos, dim=ARM_DIMS)
+                # for obstacle in obstacles: obstacle.draw(ax)
+
+                # go back to planning and plan new path
+                self.state = ArmState.PLANNING
+                self.compute_path = True
+
+                # self.stop_count = 0
         else:
             self.pause = False
+            # if previously deadlocked, remove temp arm obstacle and reset count
+            if self.stop_count >= 8:
+                self.obstacles.pop()
+                self.stop_count = 0
 
         # if pause flag, pause arm movement, don't update state or pos
         if self.pause:
@@ -246,6 +269,9 @@ class ArmStateMachine:
     def set_path(self, path, point=np.empty(3)):
         self.path = path
         self.collision_point = point
+
+    def get_other_arm_pos(self, pos):
+        self.other_arm_pos = pos
 
     def set_temp_graphics(self, point):
         self.temp_graphics.append(point)

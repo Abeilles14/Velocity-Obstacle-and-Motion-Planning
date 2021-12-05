@@ -3,8 +3,8 @@ import numpy as np
 import logging
 from math import *
 from matplotlib import pyplot as plt
-from utils import init_fonts, get_nearest_object
-from obstacles import Table
+from utils import init_fonts, get_nearest_object, add_obstacle
+from obstacles import Static_Obstacle
 from objects import Object
 from arm import Arm
 from arm_state_machine import ArmStateMachine, ArmState
@@ -18,18 +18,10 @@ logger.setLevel(logging.INFO)
 ### PARAMETERS ###
 show_RRT = False
 
-### Obstacles ###
-def add_obstacle(obstacles, pose, dim):
-	obstacle = Table()
-	obstacle.dimensions = dim
-	obstacle.pose = pose
-	obstacles.append(obstacle)
-	return obstacles
-
 ### Objects ###
 def add_objects(ax):
     # bowl
-    ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=800)
+    ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=600)
 
     # home pos
     ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100, alpha=0.8)
@@ -44,12 +36,9 @@ def add_objects(ax):
 
     # OBJ_LIST = [OBJ1, OBJ2, OBJ3, OBJ4]
 
-    
-
-
     for obj in OBJ_LIST:
         pos = obj.get_position()
-        ax.scatter3D(pos[0], pos[1], pos[2], color='red', s=100, alpha=0.8)
+        ax.scatter3D(pos[0], pos[1], pos[2], color='red', s=70, alpha=0.8)
 
     objects = OBJ_LIST
 
@@ -63,9 +52,9 @@ def main():
     ax.set_xlabel('X, [m]')
     ax.set_ylabel('Y, [m]')
     ax.set_zlabel('Z, [m]')
-    ax.set_xlim([-2.5, 2.5])
-    ax.set_ylim([-2.5, 2.5])
-    ax.set_zlim([0.0, 3.0])
+    ax.set_xlim([-3, 3])
+    ax.set_ylim([-3, 3])
+    ax.set_zlim([0.0, 4])
     mngr = plt.get_current_fig_manager()
     # win in the lower right corner:
     mngr.window.wm_geometry("+500+0")
@@ -112,6 +101,11 @@ def main():
 
         arm1_sm.run_once()
         arm2_sm.run_once()
+
+        # if stop count > 5, possible deadlock, share eachother's positions
+        if arm1_sm.stop_count > 5 or arm1_sm.stop_count > 5:
+            arm1_sm.get_other_arm_pos(arm2.get_position())
+            arm2_sm.get_other_arm_pos(arm1.get_position())
         
         path1 = arm1_sm.get_path()  # make sure that paths are already generated
         path2 = arm2_sm.get_path()
