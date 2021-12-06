@@ -202,7 +202,6 @@ class ArmStateMachine:
     def _pause(self):
         # stay at current position, do nothing
         self.arm.set_position(np.array(self.path[0]))
-        logger.debug("{} pausing at: {}".format(self.arm.get_name(), self.arm.get_position()))
 
     def run_once(self):
         logger.debug("{} Running state {}".format(self.arm.get_name(), self.state))
@@ -217,7 +216,8 @@ class ArmStateMachine:
         # didn't spend much time on writing good code here
         if self.arm.get_velocity() != INIT_VEL and euclidean_distance(self.collision_point, self.path[0]) <= SAFETY_ZONE:
             logger.info("{} EMERGENCY STOP AT {}!!".format(self.arm.get_name(), self.arm.get_position()))
-            logger.info("STOP COUNT: {}".format(self.stop_count))
+            logger.info("{} STOP COUNT: {}".format(self.arm.get_name(), self.stop_count))
+            
             self.pause = True
             self.stop_count += 1    # this gets reset in main, deal with it
         

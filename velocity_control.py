@@ -93,29 +93,35 @@ def adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2):
     if DECCEL_ARM == DeccelArm.FURTHEST_FROM_GOAL:
         if path1.shape[0] < path2.shape[0]: # arm1 nearer to goal, slow arm2
             arm2.set_velocity(0)
+            arm1.set_velocity(INIT_VEL)
             new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
             logger.info("DECREASED {} VELOCITY".format(arm2.get_name()))
         else:  # arm2 nearer to goal, slow arm 1
             arm1.set_velocity(0)
+            arm2.set_velocity(INIT_VEL)
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
             logger.info("DECREASED {} VELOCITY".format(arm1.get_name()))
     elif DECCEL_ARM == DeccelArm.NEAREST_TO_GOAL:
         if path1.shape[0] > path2.shape[0]: # arm1 further from goal, slow arm2
             arm2.set_velocity(0)
+            arm1.set_velocity(INIT_VEL)
             new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
             logger.info("DECREASED {} VELOCITY".format(arm2.get_name()))
         else:  # arm2 further to goal, slow arm1
             arm1.set_velocity(0)
+            arm2.set_velocity(INIT_VEL)
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
             logger.info("DECREASED {} VELOCITY".format(arm1.get_name()))
     elif DECCEL_ARM == DeccelArm.GOAL_NEAREST_OTHER_ARM:
         # if arm1 goal nearer to arm2 than arm2 goal nearer to arm1, slow arm1
         if euclidean_distance(arm1.get_position(), arm2.get_destination()) >= euclidean_distance(arm2.get_position(), arm1.get_destination()):
             arm1.set_velocity(0)
+            arm2.set_velocity(INIT_VEL)
             new_path2, new_path1 = update_velocity(p_fast=path2, p_slow=path1, vel=INC_VEL, idx_fast=path2_col_idx, idx_slow=path1_col_idx)
-            logger.info("DECREASED {} VELOCITY".format(arm2.get_name(), arm1.get_name()))
+            logger.info("DECREASED {} VELOCITY".format(arm1.get_name()))
         else:  # if arm1 goal further from arm2 than arm2 goal further from to arm1, slow arm2
             arm2.set_velocity(0)
+            arm1.set_velocity(INIT_VEL)
             new_path1, new_path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
             logger.info("DECREASED {} VELOCITY".format(arm2.get_name()))
 

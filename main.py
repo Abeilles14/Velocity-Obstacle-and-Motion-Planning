@@ -10,6 +10,8 @@ from arm import Arm
 from arm_state_machine import ArmStateMachine, ArmState
 from velocity_control import *
 from constants import *
+import random
+from numpy.linalg import norm
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -19,7 +21,41 @@ logger.setLevel(logging.INFO)
 show_RRT = False
 
 ### Objects ###
-def add_objects(ax):
+
+### Objects ###
+def generate_objects():
+    obj_list = []
+    obj_count = 0
+
+    # range: x E [0.0, 2.0], y E [-2.5, -2.5], z = 0.33
+    while obj_count < 6:
+        obj_x = random.uniform(-1.0, 1.0)
+        obj_y = random.uniform(-1.5, 1.5)
+        obj_z = 0.33
+        pos = [obj_x, obj_y, obj_z]
+        print(pos)
+
+        # if object not within 0.3 dist of other obj, add to list
+        if np.any(obj_list):
+            valid = True
+            for obj in obj_list:
+                if euclidean_distance(obj.get_position(), pos) < 0.3:
+                    valid = False
+
+            if valid:
+                new_obj = Object(name="OBJ{}".format(obj_count+1), position=pos)
+                obj_list.append(new_obj)
+                obj_count += 1
+        else:
+            new_obj = Object(name="OBJ{}".format(obj_count+1), position=pos)
+            obj_list.append(new_obj)
+            obj_count += 1
+
+    for obj in obj_list: print(obj.get_position())
+    return obj_list
+
+
+def add_objects(ax, objects):
     # bowl
     ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=600)
 
@@ -27,20 +63,9 @@ def add_objects(ax):
     ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100, alpha=0.8)
     ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100, alpha=0.8)
 
-    # randomize objects
-    # OBJECTS
-    # OBJ1 = Object(name="OBJ1", position=[-0.5, -1.0, 0.35])
-    # OBJ2 = Object(name="OBJ2", position=[0.0, 1.0, 0.35])
-    # OBJ3 = Object(name="OBJ3", position=[-2, -1.0, 0.35])
-    # OBJ4 = Object(name="OBJ4", position=[1, -1.0, 0.35])
-
-    # OBJ_LIST = [OBJ1, OBJ2, OBJ3, OBJ4]
-
-    for obj in OBJ_LIST:
+    for obj in objects:
         pos = obj.get_position()
         ax.scatter3D(pos[0], pos[1], pos[2], color='red', s=70, alpha=0.8)
-
-    objects = OBJ_LIST
 
     return objects
 
@@ -67,7 +92,8 @@ def main():
 
     for obstacle in obstacles: obstacle.draw(ax)
 
-    objects = add_objects(ax)
+    obj_list = generate_objects()
+    objects = add_objects(ax, obj_list)
     obj1, obj2 = None, None
 
     arm1 = Arm(name="BLUE", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL, color='#57b9fc')
@@ -106,23 +132,27 @@ def main():
         # if stop count > 8, possible deadlock, share eachother's positions
         if arm1_sm.stop_count > 5 or arm2_sm.stop_count > 5:
             logger.info("OH NO, WE HAVE A DEADLOCK!! >:(")
+            logger.info("ARM POS: {} {}, {} {}".format(arm1.get_name(), arm1.get_position(), arm2.get_name(), arm2.get_position()))
+            logger.info("ARM DIST: {}".format(euclidean_distance(arm1.get_position(), arm2.get_position())))
 
             # make fast arm replan path
             if arm1.get_velocity() != INIT_VEL:
                 arm2_sm.state = ArmState.PLANNING
                 arm2_sm.compute_path = True
                 slow_arm_pos = arm1.get_position()
+                arm2_sm.collision_point = np.empty(3)
             elif arm2.get_velocity() != INIT_VEL:
                 arm1_sm.state = ArmState.PLANNING
                 arm1_sm.compute_path = True
                 slow_arm_pos = arm2.get_position()
+                arm1_sm.collision_point = np.empty(3)
 
             # create temp obstacle box around slow arm:
             logger.info("Setting Temp Obstacle at: {}".format(slow_arm_pos))
             
             obstacles = add_obstacle(obstacles, pose=slow_arm_pos, dim=ARM_DIMS)
             temp_obstacles.append(obstacles[-1])
-            # obstacles[-1].draw(ax)
+            obstacles[-1].draw(ax)
             
             # reset stop counts
             arm1_sm.stop_count = 0
@@ -133,16 +163,16 @@ def main():
 
         # critical stop if arms in eachother safety zone
         # TODO: delete? not needed?
-        if euclidean_distance(arm1.get_position(), arm2.get_position()) <= SAFETY_ZONE:
-            if arm1.get_velocity() != INIT_VEL:
-                logger.info("{} CRITICAL STOP!!".format(arm1.get_name()))
-                arm1_sm.pause = True
-            else:
-                logger.info("{} CRITICAL STOP!!".format(arm2.get_name()))
-                arm2_sm.pause = True 
-        else:
-            arm1_sm.pause = False
-            arm2_sm.pause = False
+        # if euclidean_distance(arm1.get_position(), arm2.get_position()) <= 0.3:
+        #     if arm1.get_velocity() != INIT_VEL:
+        #         logger.info("{} CRITICAL STOP!!".format(arm1.get_name()))
+        #         arm1_sm.pause = True
+        #     else:
+        #         logger.info("{} CRITICAL STOP!!".format(arm2.get_name()))
+        #         arm2_sm.pause = True 
+        # else:
+        #     arm1_sm.pause = False
+        #     arm2_sm.pause = False
 
         # check for intersection
         if arm1_sm.check_collisions or arm2_sm.check_collisions:
@@ -196,6 +226,7 @@ def main():
                     # choose whether to speed up arm nearest or furthest to goal
                     # update paths such that speed is inc/dec until collision point only
                     new_path1, new_path2, = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
+                    logger.info("ARM VEL: {}, {}".format(arm1.get_velocity(), arm2.get_velocity()))
                 else:
                     # no collision, or reset paths velocities if collision avoided
                     logger.info("NO COLLISION DETECTED!")
