@@ -25,9 +25,9 @@ def generate_objects():
     obj_list = []
     obj_count = 0
 
-    # range: x E [0.0, 2.0], y E [-2.5, -2.5], z = 0.33
+    # range: x E [-0.5, 2.0], y E [-2.5, -2.5], z = 0.33
     while obj_count < 6:
-        obj_x = random.uniform(-1.0, 1.0)
+        obj_x = random.uniform(-0.5, 1.0)
         obj_y = random.uniform(-1.5, 1.5)
         obj_z = 0.33
         pos = [obj_x, obj_y, obj_z]
@@ -113,8 +113,8 @@ def main():
     objects = add_objects(ax, obj_list)
     obj1, obj2 = None, None
 
-    arm1 = Arm(name="BLUE", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL, color='#104E8B')
-    arm2 = Arm(name="GREEN", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=ARM2_HOME_POS, velocity=INIT_VEL, color='#3baf4f')
+    arm1 = Arm(name="BLUE", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL, color='blue')
+    arm2 = Arm(name="GREEN", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=ARM2_HOME_POS, velocity=INIT_VEL, color='green')
 
     arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
     arm2_sm = ArmStateMachine(ax, obstacles, arm2, obj2, BOWL)
