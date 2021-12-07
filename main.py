@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from math import *
 from matplotlib import pyplot as plt
-from utils import init_fonts, get_nearest_object, add_obstacle
+from utils import init_fonts, get_nearest_object, add_obstacle, dump_graphics
 from obstacles import Static_Obstacle
 from objects import Object
 from arm import Arm
@@ -19,8 +19,6 @@ logger.setLevel(logging.INFO)
 
 ### PARAMETERS ###
 show_RRT = False
-
-### Objects ###
 
 ### Objects ###
 def generate_objects():
@@ -39,7 +37,7 @@ def generate_objects():
         if np.any(obj_list):
             valid = True
             for obj in obj_list:
-                if euclidean_distance(obj.get_position(), pos) < 0.3:
+                if euclidean_distance(obj.get_position(), pos) < OBJ_SPACING:
                     valid = False
 
             if valid:
@@ -51,7 +49,18 @@ def generate_objects():
             obj_list.append(new_obj)
             obj_count += 1
 
-    for obj in obj_list: print(obj.get_position())
+    for obj in obj_list: print("{}: {}".format(obj.get_name(), obj.get_position()))
+
+    # original sim:
+    # OBJ1 = Object(name="OBJ1", position=[0.0, -1.8, 0.33])
+    # OBJ2 = Object(name="OBJ2", position=[0.5, 0.0, 0.33])
+    # OBJ3 = Object(name="OBJ3", position=[1.5, 1.8, 0.33])
+    # OBJ4 = Object(name="OBJ4", position=[1.0, -2.0, 0.33])
+    # OBJ5 = Object(name="OBJ3", position=[1.8, 1.8, 0.33])
+    # OBJ6 = Object(name="OBJ4", position=[2.0, -2.0, 0.33])
+
+    # obj_list = [OBJ1, OBJ2, OBJ3, OBJ4, OBJ5, OBJ6]
+
     return obj_list
 
 
@@ -64,10 +73,18 @@ def add_objects(ax, objects):
     ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100, alpha=0.8)
 
     for obj in objects:
+        # set color
+        color = random.choices(COLORS, k=1)
+        COLORS.remove(color[0])
+        print(color[0])
+
         pos = obj.get_position()
-        ax.scatter3D(pos[0], pos[1], pos[2], color='red', s=70, alpha=0.8)
+        obj_plot = ax.scatter3D(pos[0], pos[1], pos[2], color=color[0], s=70, alpha=0.8)
+        obj.set_color(color[0])
+        obj.set_plot(obj_plot)
 
     return objects
+    
 
 def main():
     ### SET UP ENV ###
@@ -96,7 +113,7 @@ def main():
     objects = add_objects(ax, obj_list)
     obj1, obj2 = None, None
 
-    arm1 = Arm(name="BLUE", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL, color='#57b9fc')
+    arm1 = Arm(name="BLUE", home=ARM1_HOME_POS, position=ARM1_HOME_POS, destination=ARM1_HOME_POS, velocity=INIT_VEL, color='#104E8B')
     arm2 = Arm(name="GREEN", home=ARM2_HOME_POS, position=ARM2_HOME_POS, destination=ARM2_HOME_POS, velocity=INIT_VEL, color='#3baf4f')
 
     arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1, BOWL)
@@ -125,11 +142,10 @@ def main():
                 objects.remove(obj2)
                 logger.info("ASSIGNING {} TO {}".format(arm2.get_name(), obj2.get_name()))
         
-
         arm1_sm.run_once()
         arm2_sm.run_once()
 
-        # if stop count > 8, possible deadlock, share eachother's positions
+        # if stop count > 5, possible deadlock, set temp obstacle and replan
         if arm1_sm.stop_count > 5 or arm2_sm.stop_count > 5:
             logger.info("OH NO, WE HAVE A DEADLOCK!! >:(")
             logger.info("ARM POS: {} {}, {} {}".format(arm1.get_name(), arm1.get_position(), arm2.get_name(), arm2.get_position()))
@@ -137,22 +153,20 @@ def main():
 
             # make fast arm replan path
             if arm1.get_velocity() != INIT_VEL:
-                arm2_sm.state = ArmState.PLANNING
+                arm2_sm.state = ArmState.PLANNING   # replan fast arm
                 arm2_sm.compute_path = True
                 slow_arm_pos = arm1.get_position()
-                arm2_sm.collision_point = np.empty(3)
             elif arm2.get_velocity() != INIT_VEL:
-                arm1_sm.state = ArmState.PLANNING
+                arm1_sm.state = ArmState.PLANNING   # replan fast arm
                 arm1_sm.compute_path = True
                 slow_arm_pos = arm2.get_position()
-                arm1_sm.collision_point = np.empty(3)
 
             # create temp obstacle box around slow arm:
             logger.info("Setting Temp Obstacle at: {}".format(slow_arm_pos))
             
-            obstacles = add_obstacle(obstacles, pose=slow_arm_pos, dim=ARM_DIMS)
+            obstacles = add_obstacle(obstacles, pose=slow_arm_pos, dim=TEMP_OBS)
             temp_obstacles.append(obstacles[-1])
-            obstacles[-1].draw(ax)
+            # obstacles[-1].draw(ax)
             
             # reset stop counts
             arm1_sm.stop_count = 0
@@ -163,16 +177,17 @@ def main():
 
         # critical stop if arms in eachother safety zone
         # TODO: delete? not needed?
-        # if euclidean_distance(arm1.get_position(), arm2.get_position()) <= 0.3:
-        #     if arm1.get_velocity() != INIT_VEL:
-        #         logger.info("{} CRITICAL STOP!!".format(arm1.get_name()))
-        #         arm1_sm.pause = True
-        #     else:
-        #         logger.info("{} CRITICAL STOP!!".format(arm2.get_name()))
-        #         arm2_sm.pause = True 
-        # else:
-        #     arm1_sm.pause = False
-        #     arm2_sm.pause = False
+        if euclidean_distance(arm1.get_position(), arm2.get_position()) <= 0.3:
+            # pause slow arm
+            if arm1.get_velocity() != INIT_VEL:
+                logger.info("{} CRITICAL STOP!!".format(arm1.get_name()))
+                arm1_sm.pause = True
+            else:
+                logger.info("{} CRITICAL STOP!!".format(arm2.get_name()))
+                arm2_sm.pause = True 
+        else:
+            arm1_sm.pause = False
+            arm2_sm.pause = False
 
         # check for intersection
         if arm1_sm.check_collisions or arm2_sm.check_collisions:
@@ -182,51 +197,51 @@ def main():
             if path1.shape[0] == 0: path1 = np.array([arm1.get_position()])
             if path2.shape[0] == 0: path2 = np.array([arm2.get_position()])
 
-            # check if common goal
-            if euclidean_distance(path1[-1], path2[-1]) <= COLLISION_RANGE:
-                logger.info("ARMS MOVING TOWARD COMMON GOAL {}, {}".format(path1[-1], path2[-1]))
-                point = ax.scatter3D(path1[-1,0], path1[-1,1], path1[-1,2], color='cyan', s=100)
+            #### CHECK COLLISIONS ####
+            intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
+
+            # plot collision points
+            for col_pt in intersect_pts1:
+                point, = ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
                 arm1_sm.set_temp_graphics(point)
-                point = ax.scatter3D(path2[-1,0], path2[-1,1], path2[-1,2], color='cyan', s=100)
+            for col_pt in intersect_pts2:
+                point, = ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
                 arm2_sm.set_temp_graphics(point)
-                
-                new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
-            # check for possible collisions
+
+            # if collision detected, adjust path velocities
+            if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
+                logger.info("COLLISION DETECTED!")
+                logger.debug("INTERSECTIONS 1: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
+                logger.debug("INTERSECTIONS 2: {}, SHAPE: {}".format(intersect_pts2, intersect_pts2.shape[0]))
+
+                # set collision point as first or last collision point in intersection pts
+                if RESET_VELOCITY_AT == ResetPoint.LAST_POINT:
+                    arm1_collision = intersect_pts1[-1,:]
+                    arm2_collision = intersect_pts2[-1,:]
+                elif RESET_VELOCITY_AT == ResetPoint.FIRST_POINT:
+                    arm1_collision = intersect_pts1[0,:]
+                    arm2_collision = intersect_pts2[0,:]
+
+                logger.info("COLLISION POINTS: {}, {}".format(arm1_collision, arm2_collision))
+
+                # update current path ONLY to first OR last collision point, keep initial path post collision pt
+                path1_col_idx = np.where(path1 == arm1_collision)[0][0]
+                path2_col_idx = np.where(path2 == arm2_collision)[0][0]
+
+                # choose whether to speed up arm nearest or furthest to goal
+                # update paths such that speed is inc/dec until collision point only
+                new_path1, new_path2, = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
+                logger.info("ARM VEL: {}, {}".format(arm1.get_velocity(), arm2.get_velocity()))
             else:
-                intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
-
-                # plot collision points
-                for col_pt in intersect_pts1:
-                    point, = ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
+                #### CHECK COMMON GOAL ####
+                if euclidean_distance(path1[-1], path2[-1]) <= COLLISION_RANGE:
+                    logger.info("ARMS MOVING TOWARD COMMON GOAL {}, {}".format(path1[-1], path2[-1]))
+                    point = ax.scatter3D(path1[-1,0], path1[-1,1], path1[-1,2], color='cyan', s=100)
                     arm1_sm.set_temp_graphics(point)
-                for col_pt in intersect_pts2:
-                    point, = ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
+                    point = ax.scatter3D(path2[-1,0], path2[-1,1], path2[-1,2], color='cyan', s=100)
                     arm2_sm.set_temp_graphics(point)
-
-                # if collision detected, adjust path velocities
-                if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
-                    logger.info("COLLISION DETECTED!")
-                    logger.debug("INTERSECTIONS 1: {}, SHAPE: {}".format(intersect_pts1, intersect_pts1.shape[0]))
-                    logger.debug("INTERSECTIONS 2: {}, SHAPE: {}".format(intersect_pts2, intersect_pts2.shape[0]))
-
-                    # set collision point as first or last collision point in intersection pts
-                    if RESET_VELOCITY_AT == ResetPoint.LAST_POINT:
-                        arm1_collision = intersect_pts1[-1,:]
-                        arm2_collision = intersect_pts2[-1,:]
-                    elif RESET_VELOCITY_AT == ResetPoint.FIRST_POINT:
-                        arm1_collision = intersect_pts1[0,:]
-                        arm2_collision = intersect_pts2[0,:]
-
-                    logger.info("COLLISION POINTS: {}, {}".format(arm1_collision, arm2_collision))
-
-                    # update current path ONLY to first OR last collision point, keep initial path post collision pt
-                    path1_col_idx = np.where(path1 == arm1_collision)[0][0]
-                    path2_col_idx = np.where(path2 == arm2_collision)[0][0]
-
-                    # choose whether to speed up arm nearest or furthest to goal
-                    # update paths such that speed is inc/dec until collision point only
-                    new_path1, new_path2, = adjust_arm_velocity(path1, path2, path1_col_idx, path2_col_idx, arm1, arm2)
-                    logger.info("ARM VEL: {}, {}".format(arm1.get_velocity(), arm2.get_velocity()))
+                
+                    new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
                 else:
                     # no collision, or reset paths velocities if collision avoided
                     logger.info("NO COLLISION DETECTED!")
@@ -235,10 +250,10 @@ def main():
                     arm2.set_velocity(INIT_VEL)
                     arm1_collision, arm2_collision = np.empty(3), np.empty(3)
 
-                    # if previously deadlocked, remove temp obstacles
-                    for obstacle in temp_obstacles:
-                        obstacles.remove(obstacle)
-                    temp_obstacles = []
+                # if previously deadlocked, remove temp obstacles
+                for obstacle in temp_obstacles:
+                    obstacles.remove(obstacle)
+                temp_obstacles = []
             
             # set new path, collision point, and slow arm bool
             arm1_sm.set_path(new_path1, arm1_collision)

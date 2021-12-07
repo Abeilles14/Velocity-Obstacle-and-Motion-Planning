@@ -8,6 +8,12 @@ from obstacles import Static_Obstacle
 
 from constants import LAST_INTERVAL, MULTIPLIER
 
+def dump_graphics(temp_graphics):
+    if np.any(temp_graphics):
+        for p in temp_graphics:
+            p.remove()
+    return []
+
 def add_obstacle(obstacles, pose, dim):
 	obstacle = Static_Obstacle()
 	obstacle.dimensions = dim

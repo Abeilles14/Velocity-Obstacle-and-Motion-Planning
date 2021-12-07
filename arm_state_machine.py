@@ -20,7 +20,7 @@ from arm import Arm
 from objects import Object
 from velocity_control import linear_interpolation, euclidean_distance
 from constants import *
-from utils import add_obstacle
+from utils import add_obstacle, dump_graphics
 
 
 logger = logging.getLogger(__name__)
@@ -68,8 +68,6 @@ class ArmStateMachine:
         self.stop_count = 0
         self.other_arm_pos = None
 
-        # set first object to pick
-
         logger.debug("ArmStateMachine {}:__init__".format(self.arm.get_name()))
 
         self.state_functions = {
@@ -96,31 +94,46 @@ class ArmStateMachine:
     # returns to main loop after this to check for collisions and adjust path velocity
     def _plan_path(self):
         # dump previous graphics
-        self.dump_graphics()
+        self.temp_graphics = dump_graphics(self.temp_graphics)
+        valid_path = False
 
         # Call RRTS algo to plan and execute path
         logger.info("PLANNING {} PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
         if not np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
             if self.compute_path:
                 logger.info("COMPUTING {} NEW PATH PATH TO {}".format(self.arm.get_name(), self.arm.get_destination()))
-                rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
+                
+                while(valid_path == False):
+                    rrts_path = RRTStar(self.ax, self.obstacles, self.arm.get_position(), self.arm.get_destination())
+                    if (rrts_path[-1] == self.arm.get_destination()).all():
+                        valid_path = True
+                    else:
+                        # pauses and shows info if deadlock unsolvable
+                        # likely due to arm dist < 0.3 and temp obstacle enclosing both arms
+                        # cant create a valid rrts path since arm in obstacle
+                        # TODO: fix it eventually - sorry no time to solve it now :(
+                        logger.debug("{}, {}, {}".format(self.obstacles, self.arm.get_position(), self.arm.get_destination()))
+                        logger.debug(rrts_path)
+                        plt.show()
 
                 # draw RRTStar path
                 for i in range(rrts_path.shape[0]-1):
                     line_plt, = self.ax.plot([rrts_path[i,0], rrts_path[i+1,0]], [rrts_path[i,1], rrts_path[i+1,1]], [rrts_path[i,2], rrts_path[i+1,2]], color = 'orange', linewidth=1, zorder=15)
                     self.set_temp_graphics(line_plt)
                 
-                sampled_path = linear_interpolation(rrts_path, INIT_VEL)
-                self.path = sampled_path
+                self.path = linear_interpolation(rrts_path, INIT_VEL)
                 self.compute_path = False   # don't compute path again until destination
 
     # next state depending on set goal
     def _plan_path_next(self):
         if self.destination == Goal.OBJ:
+            self.arm.set_color(self.arm.get_home_color())
             return ArmState.APPROACH_OBJECT
         elif self.destination == Goal.BOWL:
+            self.arm.set_color(self.obj.get_color())
             return ArmState.APPROACH_DEST
         elif self.destination == Goal.HOME:
+            self.arm.set_color(self.arm.get_home_color())
             return ArmState.HOME
 
     def _approach_object(self):
@@ -136,6 +149,9 @@ class ArmStateMachine:
     
     def _grab_object(self):
         logger.info("{} GRABBED {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.get_position()))
+        
+        # remove object from plot and set arm color
+        self.obj.get_plot().remove()
 
     # set next destination and compute path flag, next planning state
     def _grab_object_next(self):
@@ -175,7 +191,7 @@ class ArmStateMachine:
 
     def _home_next(self):
         if np.isclose(self.arm.get_position(), self.arm.get_destination(), atol=ABS_TOLERANCE).all():
-            self.dump_graphics()
+            self.temp_graphics = dump_graphics(self.temp_graphics)
             return ArmState.DONE
         else:
             return ArmState.HOME
@@ -197,7 +213,6 @@ class ArmStateMachine:
         # print("current pos: {}".format(self.arm.get_position()))
 
         self.path = np.delete(self.path, 0, axis=0)     # delete current point from path
-        # plt.pause(PAUSE_TIME)
 
     def _pause(self):
         # stay at current position, do nothing
@@ -212,15 +227,11 @@ class ArmStateMachine:
         else:
             self.check_collisions = False
 
-        # emergency stop if slow arm reaches dist from collision pt before regular arm
-        # didn't spend much time on writing good code here
-        if self.arm.get_velocity() != INIT_VEL and euclidean_distance(self.collision_point, self.path[0]) <= SAFETY_ZONE:
-            logger.info("{} EMERGENCY STOP AT {}!!".format(self.arm.get_name(), self.arm.get_position()))
-            logger.info("{} STOP COUNT: {}".format(self.arm.get_name(), self.stop_count))
-            
-            self.pause = True
-            self.stop_count += 1    # this gets reset in main, deal with it
+        # check conditions for emergency stop
+        self.pause = self.check_emergency_stop()
         
+        # set arm color
+
         # if pause flag, pause arm movement, don't update state or pos
         if self.pause:
             self._pause()
@@ -237,9 +248,22 @@ class ArmStateMachine:
                     self.collision_point = np.empty(3)  # reset collision point when reached
                     self.check_collisions = True
 
+    def check_emergency_stop(self):
+        # emergency stop if slow arm reaches dist from collision pt before regular arm
+        # didn't spend much time on writing good code here
+        if self.arm.get_velocity() != INIT_VEL and euclidean_distance(self.collision_point, self.path[0]) <= SAFETY_ZONE:
+            logger.info("{} EMERGENCY STOP AT {}!!".format(self.arm.get_name(), self.arm.get_position()))
+            logger.info("{} STOP COUNT: {}".format(self.arm.get_name(), self.stop_count))
+            
+            self.stop_count += 1    # this gets reset in main, deal with it
+            return True
+
+        return False
+
     def set_object(self, obj):
         self.obj = obj
         self.pick_ready = False
+
         if self.obj != None:
             self.arm.set_destination(self.obj.get_position())
             self.destination = Goal.OBJ
@@ -257,9 +281,4 @@ class ArmStateMachine:
     def set_temp_graphics(self, point):
         self.temp_graphics.append(point)
 
-    def dump_graphics(self):
-        if np.any(self.temp_graphics):
-            for p in self.temp_graphics:
-                p.remove()
-        
-        self.temp_graphics = []
+

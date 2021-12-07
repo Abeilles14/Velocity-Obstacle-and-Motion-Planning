@@ -23,9 +23,7 @@ class DeccelArm(Enum):
 class Interpolate(Enum):
     QUADRATIC = 1
     LOGARITHMIC = 2
-
-ARM1_HOME_POS = np.array([0.0, 1.0, 3.0])
-ARM2_HOME_POS = np.array([0.0, -1.0, 3.0])
+    NATURAL = 3
 
 # OBJECTS
 # OBJ1 = Object(name="OBJ1", position=[0.0, -1.8, 0.33])
@@ -35,22 +33,29 @@ ARM2_HOME_POS = np.array([0.0, -1.0, 3.0])
 
 # OBJ_LIST = [OBJ1, OBJ2, OBJ3, OBJ4]
 
-BOWL =  np.array([-1, 0.0, 0.6])
+COLORS = ['#458B74', '#8470FF', '#3D59AB', '#DC143C', '#CD1076', 'green', 
+            'orange', '#87CEFA', '#AB82FF']
+
+ARM1_HOME_POS = np.array([0.0, 1.0, 2.0])
+ARM2_HOME_POS = np.array([0.0, -1.0, 2.0])
+
+BOWL =  np.array([-1, 0.0, 0.8])
 
 
 OBSTACLE_POSES = [[0, 0, 0]]
 OBSTACLE_DIMS  = [[3.9776, 5.5616, 0.3]]    # table dimensions: 0.39776, 0.55616, 0.08 (m)
-ARM_DIMS = [0.4, 0.4, 0.4]
+TEMP_OBS = [0.6, 0.6, 0.6]  # usually 0.6-0.7, init = 0.60
 
-INIT_VEL = 0.2
-INC_VEL = 0.2
+INIT_VEL = 0.08  # usually 0.05-0.08, init = 0.08
+INC_VEL = INIT_VEL
 ABS_TOLERANCE = 0.055
-COLLISION_RANGE = 0.3 # usually 0.3-0.5
-SAFETY_ZONE = 0.1
+COLLISION_RANGE = 0.3  # usually 0.3-0.5, init = 0.3
+SAFETY_ZONE = 0.3  # init = 0.3
 LAST_INTERVAL = 0.0005
-MULTIPLIER = 0.01 #0.01866  # higher % = slower change
+MULTIPLIER = 0.008  # init = 0.008  # higher % = slower change
+OBJ_SPACING = 0.3   # usually 0.3-0.5, init = 0.3
 
-PAUSE_TIME = 0.0001
+PAUSE_TIME = 0.0005
 
 PICKING_DELAY = 10
 
@@ -58,7 +63,7 @@ PICKING_DELAY = 10
 # PROGRAM PARAMS
 ####################
 
-RESET_VELOCITY_AT = ResetPoint.FIRST_POINT
+RESET_VELOCITY_AT = ResetPoint.FIRST_POINT  # init = FIRST_POINT
 DECCEL_ARM = DeccelArm.GOAL_NEAREST_OTHER_ARM
 
 N_POINTS = 10   # threshold * pt dist? (for UPDATE_VEL_AT)

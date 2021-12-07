@@ -9,6 +9,7 @@ class Arm:
         self.dest = destination
         self.vel = velocity
         self.color = color
+        self.home_color = color
 
     def get_name(self):
         return self.name
@@ -36,3 +37,9 @@ class Arm:
 
     def get_color(self):
         return self.color
+
+    def set_color(self, color):
+        self.color = color
+
+    def get_home_color(self):
+        return self.home_color
