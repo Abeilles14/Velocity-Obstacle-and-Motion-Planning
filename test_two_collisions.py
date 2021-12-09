@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import logging
 
 from arm import Arm
-from velocity_control import *
+from velocity_control import linear_interpolation, find_intersection, update_velocity, adjust_arm_velocity
 from arm import Arm
 
 logger = logging.getLogger(__name__)
@@ -13,9 +13,9 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 
-INIT_VEL = 0.05 #controls speed of paths
-INC_VEL = 0.05
-COLLISION_RANGE = 1
+INIT_VEL = 0.16 #controls speed of paths
+INC_VEL = 0.16
+COLLISION_RANGE = 4
 
 def main():
 
@@ -64,11 +64,11 @@ def main():
     while(path1.shape[0] != 0 or path2.shape[0] != 0):
         # idx1 = i
         # idx2 = i
-
         if check_collision:
+            print("Checking collisions...")
             # check whether any pts in paths are within threshold
             # get start index for path change (current arm pos)
-            intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
+            intersect_pts1, intersect_pts2 = find_intersection(path1, path2)
             
             if intersect_pts1.size > 0 and intersect_pts2.size > 0:
                 # now that we have the intersection zones in both paths, adjust speed and animate  
@@ -80,10 +80,18 @@ def main():
                 path1_col_idx = np.where(path1 == arm1_collision)[0][0]
                 path2_col_idx = np.where(path2 == arm2_collision)[0][0]
 
+                # plot collision points
+                for col_pt in intersect_pts1:
+                    ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
+                for col_pt in intersect_pts2:
+                    ax.plot(col_pt[0], col_pt[1], col_pt[2], 'o', color='cyan')
+
                 # choose whether to speed up arm nearest or furthest to goal
                 # update paths such that speed is inc/dec until collision point only
                 path1, path2 = update_velocity(p_fast=path1, p_slow=path2, vel=INC_VEL, idx_fast=path1_col_idx, idx_slow=path2_col_idx)
                 logger.info("INCREASED {} VELOCITY, DECREASED {} VELOCITY".format(arm1.get_name(), arm2.get_name()))
+            else:
+                print("NO COLLISION DETECTED")
 
             check_collision = False
         else:

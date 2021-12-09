@@ -198,7 +198,7 @@ def main():
             if path2.shape[0] == 0: path2 = np.array([arm2.get_position()])
 
             #### CHECK COLLISIONS ####
-            intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
+            intersect_pts1, intersect_pts2 = find_intersection(path1, path2)
 
             # plot collision points
             for col_pt in intersect_pts1:

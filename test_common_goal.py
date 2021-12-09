@@ -67,7 +67,7 @@ def main():
         if check_collision:
             # check whether any pts in paths are within threshold
             # get start index for path change (current arm pos)
-            intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
+            intersect_pts1, intersect_pts2 = find_intersection(path1, path2)
             
             if intersect_pts1.size > 0 and intersect_pts2.size > 0:
                 # now that we have the intersection zones in both paths, adjust speed and animate  

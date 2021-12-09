@@ -54,7 +54,7 @@ def main():
     # arm2.set_position(path2[0])    # start at pt. 60 of path2
 
     # now that we have the intersection zones in both paths, adjust speed and animate
-    # intersect1, intersect2 = find_intersection(path1, path2, arm1, arm2)  
+    # intersect1, intersect2 = find_intersection(path1, path2)  
     # intersect_pts1, intersect_pts2 = np.array(intersect1), np.array(intersect2)
     # new_path1, new_path2 = avoid_collision(intersect_pts1, intersect_pts2, path1, path2, arm1, arm2)
     # new_path1 = interpolate(path1, 0.08)

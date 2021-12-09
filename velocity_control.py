@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.INFO)
 
-def find_intersection(path1, path2, arm1, arm2, animate=False):
+def find_intersection(path1, path2, animate=False):
     animate = False
 
     # check whether any pts in paths are within threshold

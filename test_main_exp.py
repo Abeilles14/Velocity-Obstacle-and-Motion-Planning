@@ -94,7 +94,7 @@ def main():
                 new_path1, new_path2 = common_goal_collision(path1, path2, arm1, arm2)
             # check for other possible collisions
             else:
-                intersect_pts1, intersect_pts2 = find_intersection(path1, path2, arm1, arm2)
+                intersect_pts1, intersect_pts2 = find_intersection(path1, path2)
 
                 # if collision detected, adjust path velocities
                 if (intersect_pts1.shape[0] != 0) and (intersect_pts2.shape[0] != 0):
