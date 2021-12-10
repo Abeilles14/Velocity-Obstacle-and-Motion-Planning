@@ -21,9 +21,16 @@ class DeccelArm(Enum):
     GOAL_NEAREST_OTHER_ARM = 3
 
 class Interpolate(Enum):
-    QUADRATIC = 1
-    LOGARITHMIC = 2
-    NATURAL = 3
+    CONSTANT = 1
+    QUADRATIC = 2
+    LOGARITHMIC = 3
+    NATURAL = 4
+
+### RRTStar Parameters ###
+# maxiters  = 5000
+# minDistGoal = 0.05 # Convergence criterion: success when the tree reaches within 0.25 in distance from the goal.
+# d = 0.1#0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
+    
 
 # OBJECTS
 # OBJ1 = Object(name="OBJ1", position=[0.0, -1.8, 0.33])

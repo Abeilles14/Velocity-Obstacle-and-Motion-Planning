@@ -66,11 +66,11 @@ def generate_objects():
 
 def add_objects(ax, objects):
     # bowl
-    ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=600)
+    ax.scatter3D(BOWL[0], BOWL[1], BOWL[2], color='red', s=600, alpha=1)
 
     # home pos
-    ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100, alpha=0.8)
-    ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100, alpha=0.8)
+    ax.scatter3D(ARM1_HOME_POS[0], ARM1_HOME_POS[1], ARM1_HOME_POS[2], color='blue', s=100, alpha=1)
+    ax.scatter3D(ARM2_HOME_POS[0], ARM2_HOME_POS[1], ARM2_HOME_POS[2], color='green', s=100, alpha=1)
 
     for obj in objects:
         # set color
@@ -79,7 +79,7 @@ def add_objects(ax, objects):
         print(color[0])
 
         pos = obj.get_position()
-        obj_plot = ax.scatter3D(pos[0], pos[1], pos[2], color=color[0], s=70, alpha=0.8)
+        obj_plot = ax.scatter3D(pos[0], pos[1], pos[2], color=color[0], s=70, alpha=1)
         obj.set_color(color[0])
         obj.set_plot(obj_plot)
 
@@ -91,9 +91,9 @@ def main():
     init_fonts()
     fig = plt.figure(figsize=(10,10))
     ax = plt.axes(projection='3d')
-    ax.set_xlabel('X, [m]')
-    ax.set_ylabel('Y, [m]')
-    ax.set_zlabel('Z, [m]')
+    ax.set_xlabel('X, [cm*10]')
+    ax.set_ylabel('Y, [cm*10]')
+    ax.set_zlabel('Z, [cm*10]')
     ax.set_xlim([-3, 3])
     ax.set_ylim([-3, 3])
     ax.set_zlim([0.0, 4])
@@ -125,6 +125,7 @@ def main():
     arm1_collision = np.empty(3)
     arm2_collision = np.empty(3)
    
+    # plt.show()
     #### MAIN LOOP ####
     while (arm1_sm.state != ArmState.DONE) or (arm2_sm.state != ArmState.DONE):
         # if arm done picking last obj (full cycle), set next obj

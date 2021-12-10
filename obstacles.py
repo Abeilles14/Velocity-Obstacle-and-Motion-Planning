@@ -37,7 +37,7 @@ class Static_Obstacle:
 
     def draw(self, ax):
         colors = (135 / 255, 92 / 255, 41 / 255)
-        ax.add_collection3d(Poly3DCollection(self.vertixes(), facecolors=colors, linewidths=1, edgecolors='k', alpha=.2))
+        ax.add_collection3d(Poly3DCollection(self.vertixes(), facecolors=colors, linewidths=0.3, edgecolors='k', alpha=0.1))
 
 # class Temp_Obstacle:
 #     def __init__(self, rad, pos, stack, sector):
