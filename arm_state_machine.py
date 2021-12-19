@@ -25,7 +25,7 @@ from utils import add_obstacle, dump_graphics
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class ArmState(Enum):
     PLANNING = 0,

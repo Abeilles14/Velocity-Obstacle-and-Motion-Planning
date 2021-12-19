@@ -167,7 +167,7 @@ def main():
             
             obstacles = add_obstacle(obstacles, pose=slow_arm_pos, dim=TEMP_OBS)
             temp_obstacles.append(obstacles[-1])
-            # obstacles[-1].draw(ax)
+            obstacles[-1].draw(ax)
             
             # reset stop counts
             arm1_sm.stop_count = 0

@@ -13,7 +13,7 @@ logging.basicConfig()
 logger.setLevel(logging.INFO)
 
 
-INIT_VEL = 0.16 #controls speed of paths
+INIT_VEL = 0.16 # controls speed of paths
 INC_VEL = 0.16
 COLLISION_RANGE = 4
 
@@ -175,6 +175,36 @@ def run_path(path1, path2, arm1, arm2):
             
         i += 1
         plt.pause(0.0005)
+
+    plt.show()
+
+
+def show_fig():
+
+    animate = False
+
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.set_xlabel('X, [m]')
+    ax.set_ylabel('Y, [m]')
+    ax.set_zlabel('Z, [m]')
+    ax.set_xlim([0,12])
+    ax.set_ylim([0,12])
+    ax.set_zlim([0,12])
+
+    # l1 = np.array([[0.0,0.0,0.0], [6.5,7.0,7.0], [9.0,1.0,2.0]])
+    # l2 = np.array([[2.0,0.0,3.0], [4.0,6.0,6.0], [5.0,4.0,4.0], [10.0,6.0,6.0]])
+
+    # # initialize arms
+    # # start at 1 pts of each lines, end at last pt of each line
+
+    # plt.plot(l1[:,0], l1[:,1], l1[:,2], 'o', color='orange')
+    # plt.plot(l2[:,0], l2[:,1], l2[:,2], 'o', color='blue')
+
+    # for i in range(l1.shape[0]-1):
+    #     ax.plot([l1[i,0], l1[i+1,0]], [l1[i,1], l1[i+1,1]], [l1[i,2], l1[i+1,2]], color = 'orange', linewidth=1, zorder=15)
+    # for i in range(l2.shape[0]-1):
+    #     ax.plot([l2[i,0], l2[i+1,0]], [l2[i,1], l2[i+1,1]], [l2[i,2], l2[i+1,2]], color = 'blue', linewidth=1, zorder=15)
 
     plt.show()
 
