@@ -6,7 +6,7 @@ import math
 
 from obstacles import Static_Obstacle
 
-from constants import LAST_INTERVAL, MULTIPLIER
+from constants import LAST_INTERVAL, MULTIPLIER, VELOCITY_FUNC, Interpolate
 
 def dump_graphics(temp_graphics):
     if np.any(temp_graphics):
@@ -88,7 +88,7 @@ def nonlinear_interpolation(P, step, show_interplot=False):
     dist = np.sqrt(xd**2 + yd**2 + zd**2)
     _u = np.cumsum(dist)
     u = np.hstack([[0], _u])
-    t = natural_range(0, u.max()+step, step)
+    t = quadratic_range(0, u.max()+step, step)
     xn = np.interp(t, u, x)
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)

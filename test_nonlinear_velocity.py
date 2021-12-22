@@ -21,9 +21,9 @@ def main():
     ax.set_xlabel('X, [m]')
     ax.set_ylabel('Y, [m]')
     ax.set_zlabel('Z, [m]')
-    ax.set_xlim([0,5])
-    ax.set_ylim([0,5])
-    ax.set_zlim([0,5])
+    ax.set_xlim([0,3])
+    ax.set_ylim([0,3])
+    ax.set_zlim([0,3])
 
     # l1 = np.array([[0.0,0.0,0.0], [10.0,8.0,8.0]])
     # l2 = np.array([[2.0,0.0,3.0], [6.0,8.0,8.0], [10.0,2.0,2.0]])
@@ -47,7 +47,7 @@ def main():
 
 
     # initialize paths
-    path1 = interpolate(l1, STEP_SIZE)
+    path1 = interpolate(l1, 0.3, ax)#STEP_SIZE)
     # path2 = interpolate(l2, STEP_SIZE)
 
     # arm1.set_position(path1[0])    # start at pt. 0 of path1
@@ -88,7 +88,8 @@ def run_path(path1):
         idx1 = i
         # idx2 = i
 
-        plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='red', markersize=1)
+        plt.plot(path1[idx1,0], path1[idx1,1], path1[idx1,2], 'o', color='blue', markersize=2)
+
         # if idx2 < path2.shape[0]:
         #     plt.plot(path2[idx2,0], path2[idx2,1], path2[idx2,2], 'o', color='red', markersize=1)
 
@@ -193,7 +194,7 @@ def natural_interpolation(lb, ub, step):
 
     return np.array(arr)
 
-def interpolate(P, step, show_interplot=False):
+def interpolate(P, step, ax, show_interplot=True):
     x, y, z = P.T
     xd = np.diff(x)
     yd = np.diff(y)
@@ -203,24 +204,27 @@ def interpolate(P, step, show_interplot=False):
     u = np.hstack([[0], u_])
 
     # t = np.linspace(0, u.max(), size) #interpolate using # points (80)
-    # t = np.arange(0, u.max()+step, step)  # start val, end val, steps     
+    t_ = np.arange(0, u.max()+step, step)  # start val, end val, steps  
+    xn_ = np.interp(t_, u, x)     # TODO: make sure fp and xp len matches
+    yn_ = np.interp(t_, u, y)
+    zn_ = np.interp(t_, u, z)   
 
-    t = natural_interpolation(0, u.max()+step, step)
-    print(u.max())
-    print(t)
+
+    t = natural_interpolation(0, u.max(), step)
+    
 
     xn = np.interp(t, u, x)     # TODO: make sure fp and xp len matches
     yn = np.interp(t, u, y)
     zn = np.interp(t, u, z)
 
     if show_interplot:
-        f = plt.figure()
-        ax = plt.axes(projection='3d')
-        ax.plot(x, y, z, 'o', alpha=0.3)
-        ax.plot(xn, yn, zn, 'ro', markersize=2)
-        ax.set_xlim([-2.5, 2.5])
-        ax.set_ylim([-2.5, 2.5])
-        ax.set_zlim([0.0, 3.0])
+        # f = plt.figure()
+        # ax = plt.axes(projection='3d')
+        ax.plot(xn_, yn_, zn_, 'o', alpha=0.5)
+        ax.plot(xn, yn, zn, 'ro', markersize=3)
+        # ax.set_xlim([-2.5, 2.5])
+        # ax.set_ylim([-2.5, 2.5])
+        # ax.set_zlim([0.0, 3.0])
     
     path = np.column_stack((xn, yn, zn))
 
