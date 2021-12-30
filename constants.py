@@ -51,7 +51,7 @@ BOWL =  np.array([-1, 0.0, 0.8])
 
 OBSTACLE_POSES = [[0, 0, 0]]
 OBSTACLE_DIMS  = [[3.9776, 5.5616, 0.3]]    # table dimensions: 0.39776, 0.55616, 0.08 (m)
-TEMP_OBS = [0.6, 0.6, 0.6]  # 0.6-0.7, init = 0.6, eval = 0.6
+TEMP_OBS = [0.35, 0.35, 0.35]  # 0.6-0.7, init = 0.6, eval = 0.6
 
 INIT_VEL = 0.08  # 0.05-0.08, init = 0.08, eval = 0.16 (0.08x1.8)
 INC_VEL = INIT_VEL
